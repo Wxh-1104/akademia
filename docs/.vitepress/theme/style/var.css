@@ -22,11 +22,9 @@
 }
 
 :root {
-  --vp-button-brand-border: #F6CEEC;
   --vp-button-brand-text: #fff;
   --vp-button-brand-bg: #D939CD;
 
-  --vp-button-brand-hover-border: #F6CEEC;
   --vp-button-brand-hover-text: #F6CEEC;
   --vp-button-brand-hover-bg: #D939CD;
 

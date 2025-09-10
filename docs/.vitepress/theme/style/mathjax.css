@@ -1,0 +1,11 @@
+mjx-container[display="true"] {
+  display: block;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  text-align: center !important;
+  padding: 0.5em 0;
+  margin: 1em 0;
+}
+mjx-container[display="true"] > mjx-math {
+  display: inline-block;
+}

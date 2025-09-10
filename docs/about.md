@@ -21,7 +21,61 @@
 - 请确保文档结构清晰、层次分明。
 - 请使用适当的标题和子标题来组织内容，一级标题（`#`）不会在页面导航中显示，因此**请将一级标题作为整个文档的大标题使用**，或**不使用一级标题**。
 
-### 在文档中显示 Mermaid 图表
+### 文档中显示代码块
+
+文档中可以使用 `code-group` 显示代码组，例如
+````markdown
+::: code-group
+
+```sh [pnpm]
+# Build with VitePress using pnpm
+pnpm docs:build
+```
+
+```sh [npm]
+# Build with VitePress using npm
+npm run docs:build
+```
+
+:::
+````
+
+会显示为
+
+::: code-group
+
+```sh [pnpm]
+# Build with VitePress using pnpm
+pnpm docs:build
+```
+
+```sh [npm]
+# Build with VitePress using npm
+npm run docs:build
+```
+
+:::
+
+### 文档中显示容器
+
+文档支持 `INFO`、`TIP`、`NOTE`、`IMPORTANT`、`WARNING`、`CAUTION`、`DANGER`容器：
+
+> [!INFO]
+
+> [!TIP]
+
+> [!WARNING]
+
+> [!IMPORTANT]
+
+> [!DANGER]
+
+> [!NOTE]
+
+> [!CAUTION]
+
+
+### 文档中显示 Mermaid 图表
 
 [Mermaid](https://mermaid.js.org/) 是基于 JavaScript 的图表工具，可渲染 Markdown 启发的文本定义以动态创建和修改图表。
 
@@ -51,7 +105,17 @@ sequenceDiagram
     服务器-->>浏览器: 发送 JSON 响应
 ```
 
-### 在文档中显示 Iconify 提供的图标
+### 文档中高亮文本
+
+```html
+<span class="marker">这里是尤雨溪的主页样式，鼠标放在我上面看效果</span>
+```
+
+呈现效果：
+
+<span class="marker">这里是尤雨溪的主页样式，鼠标放在我上面看效果</span>
+
+### 文档中显示 Iconify 提供的图标
 
 本站文档支持使用 [Iconify](https://iconify.design/) 提供的图标。你可以通过以下方式在文档中插入指定图标：
 
@@ -121,3 +185,29 @@ sequenceDiagram
 <Icon icon="fa7-brands:weibo" href="https://www.weibo.com/"/>
 
 <Icon icon="simple-icons:nvidia" href="https://www.nvidia.com/"/>
+
+### 文档中显示时间轴
+
+使用插件提供的 `timeline` 在文档中显示时间轴，用以表示一系列步骤或以时间先后为序的事件。例如
+```markdown
+::: timeline 2020-04-30
+VitePress 0.1.0 版本发布。
+:::
+
+::: timeline 2024-03-21
+VitePress 1.0.0 版本发布：
+- Features:
+  - **theme:** allow selectively disabling external link icon on navbar items ([#3607](https://github.com/vuejs/vitepress/issues/3607)) ([5f6297c](https://github.com/vuejs/vitepress/commit/5f6297cb3df98926154235f31570e75820d4ea16))
+:::
+```
+会显示为
+
+::: timeline 2020-04-30
+VitePress 0.1.0 版本发布。
+:::
+
+::: timeline 2024-03-21
+VitePress 1.0.0 版本发布：
+- Features:
+  - **theme:** allow selectively disabling external link icon on navbar items ([#3607](https://github.com/vuejs/vitepress/issues/3607)) ([5f6297c](https://github.com/vuejs/vitepress/commit/5f6297cb3df98926154235f31570e75820d4ea16))
+:::

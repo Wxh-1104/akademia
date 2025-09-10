@@ -6,6 +6,8 @@
 @import './hiddenBorder.css';
 @import './marker.css';
 @import './codeBlock.css';
+@import './codeGroup.css';
+@import './mathjax.css';
 @import './tasklist.css';
 @import './sidebarIcon.css';
 @import './iconify.css';
