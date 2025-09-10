@@ -1,0 +1,14 @@
+.iconify {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 1.25em;
+}
+
+a.icon-link-wrapper {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.5s;
+}
+a.icon-link-wrapper:hover {
+  color: var(--vp-c-brand-1);
+}

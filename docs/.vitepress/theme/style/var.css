@@ -1,0 +1,77 @@
+/* var.css */
+:root {
+  --vp-c-brand-1: #18794e;
+  --vp-c-brand-2: #299764;
+  --vp-c-brand-3: #30a46c;
+}
+
+.dark {
+  --vp-c-brand-1: #3dd68c;
+  --vp-c-brand-2: #30a46c;
+  --vp-c-brand-3: #298459;
+}
+
+:root {
+  /* hero标题渐变色 */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(#bd34fe, #41d1ff);
+
+  /*hero logo背景渐变色 */
+  --vp-home-hero-image-background-image: linear-gradient(#bd34fe 50%, #47caff 50%);
+  --vp-home-hero-image-filter: blur(40px);
+}
+
+:root {
+  --vp-button-brand-border: #F6CEEC;
+  --vp-button-brand-text: #fff;
+  --vp-button-brand-bg: #D939CD;
+
+  --vp-button-brand-hover-border: #F6CEEC;
+  --vp-button-brand-hover-text: #F6CEEC;
+  --vp-button-brand-hover-bg: #D939CD;
+
+  --vp-button-brand-active-border: #F6CEEC;
+}
+
+.vp-doc h1 {
+
+}
+
+.vp-doc h2 {
+  border-top: none; /* 移除 h2 标题上方的分割线 */
+  margin-top: 0.5em; /* 设置 h2 标题上方的外边距 */
+}
+
+.VPNavBar .title {
+  font-family: var(--vp-font-family-heading);
+  font-size: 1.15em;
+}
+
+/* 为紧跟在 h2 后面的 h3 增加顶部外边距 */
+.vp-doc h2 + h3 {
+  margin-top: 1.25em;
+}
+/* 为紧跟在 h3 后面的 h4 增加顶部外边距 */
+.vp-doc h3 + h4 {
+  margin-top: 1.25em;
+}
+/* 为紧跟在 h4 后面的 h5 增加顶部外边距 */
+.vp-doc h4 + h5 {
+  margin-top: 1.25em;
+}
+/* 为紧跟在 h5 后面的 h6 增加顶部外边距 */
+.vp-doc h5 + h6 {
+  margin-top: 1.25em;
+}
+
+.vp-doc .custom-block > p:first-child {
+  font-family: var(--vp-font-family-heading);
+  font-size: 1.2em;
+  font-weight: 900;
+  margin-bottom: 12px;
+}
+
+.vp-doc .footnotes ol li {
+  font-size: 0.9em;
+  line-height: 1.6;
+}
