@@ -199,6 +199,8 @@ VitePress 1.0.0 版本发布：
 - Features:
   - **theme:** allow selectively disabling external link icon on navbar items ([#3607](https://github.com/vuejs/vitepress/issues/3607)) ([5f6297c](https://github.com/vuejs/vitepress/commit/5f6297cb3df98926154235f31570e75820d4ea16))
 :::
+
+::: timeline
 ```
 会显示为
 
@@ -211,3 +213,5 @@ VitePress 1.0.0 版本发布：
 - Features:
   - **theme:** allow selectively disabling external link icon on navbar items ([#3607](https://github.com/vuejs/vitepress/issues/3607)) ([5f6297c](https://github.com/vuejs/vitepress/commit/5f6297cb3df98926154235f31570e75820d4ea16))
 :::
+
+::: timeline
