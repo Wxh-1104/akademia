@@ -1,5 +1,5 @@
 /* 侧边栏缩放 */
-.group:has([role='button']) .VPSidebarItem.level-0 .items {
+.group:has([role="button"]) .VPSidebarItem.level-0 .items {
   padding-left: 15px !important;
   border-left: 1px solid var(--vp-c-divider);
   border-radius: 2px;
@@ -8,43 +8,43 @@
 
 /* --- 图标通用设置 --- */
 #VPSidebarNav .VPSidebarItem > .item {
-    display: flex;
-    align-items: flex-start;
-    padding-left: 24px;
+  display: flex;
+  align-items: flex-start;
+  padding-left: 24px;
 }
 
 /* 使用 ::before 伪元素来创建图标占位符 */
 #VPSidebarNav .VPSidebarItem > .item::before {
-    content: '';
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    margin-right: 4px; /* 图标和文本之间的间距 */
-    margin-top: 7px;
-    margin-left: -32px;
-    
-    /* 核心：使用 mask 来应用图标并上色 */
-    mask-size: cover; /* 确保图标完整显示 */
-    mask-repeat: no-repeat; /* 防止图标平铺 */
-    background-color: var(--vp-c-text-2); /* 指定图标颜色！可改为任何颜色 */
-    
-    /* 添加一个过渡效果，让颜色变化更平滑 */
-    transition: background-color 0.5s;
+  content: "";
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-right: 4px; /* 图标和文本之间的间距 */
+  margin-top: 7px;
+  margin-left: -32px;
+
+  /* 核心：使用 mask 来应用图标并上色 */
+  mask-size: cover; /* 确保图标完整显示 */
+  mask-repeat: no-repeat; /* 防止图标平铺 */
+  background-color: var(--vp-c-text-2); /* 指定图标颜色！可改为任何颜色 */
+
+  /* 添加一个过渡效果，让颜色变化更平滑 */
+  transition: background-color 0.5s;
 }
 
 /* --- 为不同状态的侧边栏项设置不同的图标 --- */
 
 /* 1. 折叠的文件夹图标 (非链接) */
 #VPSidebarNav .VPSidebarItem:not(.is-link).collapsed > .item::before {
-    mask-image: url('/icons/material-symbols--folder-rounded.svg');
+  mask-image: url("/icons/material-symbols--folder-rounded.svg");
 }
 
 /* 2. 展开的文件夹图标 (非链接) */
 #VPSidebarNav .VPSidebarItem:not(.is-link):not(.collapsed) > .item::before {
-    mask-image: url('/icons/material-symbols--folder-open-rounded.svg');
+  mask-image: url("/icons/material-symbols--folder-open-rounded.svg");
 }
 
 /* 3. 文件/页面图标 (链接) */
 #VPSidebarNav .VPSidebarItem.is-link > .item::before {
-    mask-image: url('/icons/material-symbols--description-rounded.svg');
+  mask-image: url("/icons/material-symbols--description-rounded.svg");
 }

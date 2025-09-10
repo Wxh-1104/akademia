@@ -1,138 +1,136 @@
 :root {
-    --custom-block-info-left: #626262;
-    --custom-block-info-bg: #fafafa;
-    --custom-block-tip-left: #009400;
-    --custom-block-tip-bg: #e6f6e6;
-    --custom-block-warning-left: #e6a700;
-    --custom-block-warning-bg: #fff8e6;
-    --custom-block-danger-left: #e13238;
-    --custom-block-danger-bg: #ffebec;
-    --custom-block-note-left: #4cb3d4;
-    --custom-block-note-bg: #eef9fd;
-    --custom-block-important-left: #a371f7;
-    --custom-block-important-bg: #f4eefe;
-    --custom-block-caution-left: #e0575b;
-    --custom-block-caution-bg: #fde4e8;
+  --custom-block-info-left: #626262;
+  --custom-block-info-bg: #fafafa;
+  --custom-block-tip-left: #009400;
+  --custom-block-tip-bg: #e6f6e6;
+  --custom-block-warning-left: #e6a700;
+  --custom-block-warning-bg: #fff8e6;
+  --custom-block-danger-left: #e13238;
+  --custom-block-danger-bg: #ffebec;
+  --custom-block-note-left: #4cb3d4;
+  --custom-block-note-bg: #eef9fd;
+  --custom-block-important-left: #a371f7;
+  --custom-block-important-bg: #f4eefe;
+  --custom-block-caution-left: #e0575b;
+  --custom-block-caution-bg: #fde4e8;
 }
 
 .dark {
-    --custom-block-info-left: #cccccc;
-    --custom-block-info-bg: #474748;
-    --custom-block-tip-left: #31a431;
-    --custom-block-tip-bg: #003100;
-    --custom-block-warning-left: #e6a700;
-    --custom-block-warning-bg: #4d3800;
-    --custom-block-danger-left: #e13238;
-    --custom-block-danger-bg: #4b1113;
-    --custom-block-note-left: #4cb3d4;
-    --custom-block-note-bg: #193c47;
-    --custom-block-important-left: #a371f7;
-    --custom-block-important-bg: #230555;
-    --custom-block-caution-left: #e0575b;
-    --custom-block-caution-bg: #391c22;
+  --custom-block-info-left: #cccccc;
+  --custom-block-info-bg: #474748;
+  --custom-block-tip-left: #31a431;
+  --custom-block-tip-bg: #003100;
+  --custom-block-warning-left: #e6a700;
+  --custom-block-warning-bg: #4d3800;
+  --custom-block-danger-left: #e13238;
+  --custom-block-danger-bg: #4b1113;
+  --custom-block-note-left: #4cb3d4;
+  --custom-block-note-bg: #193c47;
+  --custom-block-important-left: #a371f7;
+  --custom-block-important-bg: #230555;
+  --custom-block-caution-left: #e0575b;
+  --custom-block-caution-bg: #391c22;
 }
-
 
 /* --- 容器基础样式 (为所有容器设置通用样式) --- */
 .custom-block {
-    border-left-width: 5px;
-    border-left-style: solid;
+  border-left-width: 5px;
+  border-left-style: solid;
 }
 
 .custom-block-title {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 /* --- 图标通用基础样式 (关键部分) --- */
 .custom-block [class*="custom-block-title"]::before {
-    content: '';
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    vertical-align: middle;
-    position: relative;
-    margin-right: 4px;
-    left: -4px;
-    top: -2px; /* 统一垂直对齐 */
+  content: "";
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  margin-right: 4px;
+  left: -4px;
+  top: -2px; /* 统一垂直对齐 */
 
-    /* 使用 MASK 技术 */
-    mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    /* background-color 将在下面为每个容器单独指定 */
+  /* 使用 MASK 技术 */
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  /* background-color 将在下面为每个容器单独指定 */
 }
-
 
 /* --- 为每种容器指定边框颜色、背景色和图标 --- */
 
 /* 1. Info */
 .custom-block.info {
-    border-color: var(--custom-block-info-left);
-    background-color: var(--custom-block-info-bg);
+  border-color: var(--custom-block-info-left);
+  background-color: var(--custom-block-info-bg);
 }
 .custom-block.info [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-info-left);
-    mask-image: url('/icons/material-symbols--info-outline-rounded.svg');
+  background-color: var(--custom-block-info-left);
+  mask-image: url("/icons/material-symbols--info-outline-rounded.svg");
 }
 
 /* 2. Tip */
 .custom-block.tip {
-    border-color: var(--custom-block-tip-left);
-    background-color: var(--custom-block-tip-bg);
+  border-color: var(--custom-block-tip-left);
+  background-color: var(--custom-block-tip-bg);
 }
 .custom-block.tip [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-tip-left);
-    mask-image: url('/icons/fa7-regular--lightbulb.svg');
+  background-color: var(--custom-block-tip-left);
+  mask-image: url("/icons/fa7-regular--lightbulb.svg");
 }
 
 /* 3. Warning */
 .custom-block.warning {
-    border-color: var(--custom-block-warning-left);
-    background-color: var(--custom-block-warning-bg);
+  border-color: var(--custom-block-warning-left);
+  background-color: var(--custom-block-warning-bg);
 }
 .custom-block.warning [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-warning-left);
-    mask-image: url('/icons/material-symbols--warning-outline-rounded.svg');
+  background-color: var(--custom-block-warning-left);
+  mask-image: url("/icons/material-symbols--warning-outline-rounded.svg");
 }
 
 /* 4. Danger */
 .custom-block.danger {
-    border-color: var(--custom-block-danger-left);
-    background-color: var(--custom-block-danger-bg);
+  border-color: var(--custom-block-danger-left);
+  background-color: var(--custom-block-danger-bg);
 }
 .custom-block.danger [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-danger-left);
-    mask-image: url('/icons/fluent-emoji-high-contrast--alien-monster.svg');
+  background-color: var(--custom-block-danger-left);
+  mask-image: url("/icons/fluent-emoji-high-contrast--alien-monster.svg");
 }
 
 /* 5. Note */
 .custom-block.note {
-    border-color: var(--custom-block-note-left);
-    background-color: var(--custom-block-note-bg);
+  border-color: var(--custom-block-note-left);
+  background-color: var(--custom-block-note-bg);
 }
 .custom-block.note [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-note-left);
-    mask-image: url('/icons/fa7-regular--sticky-note.svg');
+  background-color: var(--custom-block-note-left);
+  mask-image: url("/icons/fa7-regular--sticky-note.svg");
 }
 
 /* 6. Important */
 .custom-block.important {
-    border-color: var(--custom-block-important-left);
-    background-color: var(--custom-block-important-bg);
+  border-color: var(--custom-block-important-left);
+  background-color: var(--custom-block-important-bg);
 }
 .custom-block.important [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-important-left);
-    /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
-    mask-image: url('/icons/fa7-regular--bell.svg');
+  background-color: var(--custom-block-important-left);
+  /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
+  mask-image: url("/icons/fa7-regular--bell.svg");
 }
 
 /* 7. Caution */
 .custom-block.caution {
-    border-color: var(--custom-block-caution-left);
-    background-color: var(--custom-block-caution-bg);
+  border-color: var(--custom-block-caution-left);
+  background-color: var(--custom-block-caution-bg);
 }
 .custom-block.caution [class*="custom-block-title"]::before {
-    background-color: var(--custom-block-caution-left);
-    /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
-    mask-image: url('/icons/material-symbols--crisis-alert-rounded.svg');
+  background-color: var(--custom-block-caution-left);
+  /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
+  mask-image: url("/icons/material-symbols--crisis-alert-rounded.svg");
 }

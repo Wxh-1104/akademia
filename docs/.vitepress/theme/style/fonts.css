@@ -1,30 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;900&display=swap");
 
 @font-face {
-  font-family: 'Maple Mono';
-  src: url('/fonts/MapleMono-Regular.ttf.woff2') format('woff2');
+  font-family: "Maple Mono";
+  src: url("/fonts/MapleMono-Regular.ttf.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap; /* 优化字体加载，避免文本闪烁 */
 }
 @font-face {
-  font-family: 'Maple Mono';
-  src: url('/fonts/MapleMono-Bold.ttf.woff2') format('woff2');
+  font-family: "Maple Mono";
+  src: url("/fonts/MapleMono-Bold.ttf.woff2") format("woff2");
   font-weight: bold;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Maple Mono';
-  src: url('/fonts/MapleMono-Italic.ttf.woff2') format('woff2');
+  font-family: "Maple Mono";
+  src: url("/fonts/MapleMono-Italic.ttf.woff2") format("woff2");
   font-weight: normal;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Maple Mono';
-  src: url('/fonts/MapleMono-ExtraBoldItalic.ttf.woff2') format('woff2');
+  font-family: "Maple Mono";
+  src: url("/fonts/MapleMono-ExtraBoldItalic.ttf.woff2") format("woff2");
   font-weight: bold;
   font-style: italic;
   font-display: swap;
@@ -33,12 +33,17 @@
 /* :root 全局变量定义 */
 :root {
   /* 正文字体 */
-  --vp-font-family-base: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --vp-font-family-heading: 'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', serif;
+  --vp-font-family-base: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  --vp-font-family-heading: "Noto Serif SC", "Source Han Serif SC",
+    "Source Han Serif CN", serif;
 
   /* 等宽字体（代码块） */
-  --vp-font-family-mono: 'Maple Mono', 'JetBrains Mono', monospace, 'Noto Sans SC';
-  --vp-font-feature-settings-mono: "cv01", "cv02", "cv05", "cv35", "cv40", "cv42", "cv43", "cv61", "cv62", "cv63", "ss01", "ss03", "ss04", "ss05", "ss06";
+  --vp-font-family-mono: "Maple Mono", "JetBrains Mono", monospace,
+    "Noto Sans SC";
+  --vp-font-feature-settings-mono: "cv01", "cv02", "cv05", "cv35", "cv40",
+    "cv42", "cv43", "cv61", "cv62", "cv63", "ss01", "ss03", "ss04", "ss05",
+    "ss06";
   --vp-font-variant-ligatures-mono: none;
 }
 
@@ -59,14 +64,20 @@ body {
   font-family: var(--vp-font-family-base) !important;
   font-weight: 400 !important;
 }
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--vp-font-family-heading) !important;
   font-weight: 900 !important;
 }
-strong, b {
+strong,
+b {
   font-weight: 800 !important;
 }
 
 .vp-doc a {
-    text-decoration: none;
+  text-decoration: none;
 }
