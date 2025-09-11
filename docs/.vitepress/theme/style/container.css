@@ -11,8 +11,8 @@
   --custom-block-note-bg: #eef9fd;
   --custom-block-important-left: #a371f7;
   --custom-block-important-bg: #f4eefe;
-  --custom-block-caution-left: #e6a700;
-  --custom-block-caution-bg: #fff8e6;
+  --custom-block-caution-left: #e69200;
+  --custom-block-caution-bg: #fff3e6;
 }
 
 .dark {
@@ -28,8 +28,8 @@
   --custom-block-note-bg: #193c47;
   --custom-block-important-left: #a371f7;
   --custom-block-important-bg: #230555;
-  --custom-block-caution-left: #e6a700;
-  --custom-block-caution-bg: #4d3800;
+  --custom-block-caution-left: #e69200;
+  --custom-block-caution-bg: #4d2a00;
 }
 
 /* --- 容器基础样式 (为所有容器设置通用样式) --- */
@@ -80,6 +80,10 @@
   background-position: center;
   opacity: 0.03; /* 透明度，避免喧宾夺主 */
   pointer-events: none; /* 不阻挡交互 */
+}
+
+.dark .custom-block::after {
+  background-image: url("/logo-dark.svg");
 }
 
 /* --- 为每种容器指定边框颜色、背景色和图标 --- */
