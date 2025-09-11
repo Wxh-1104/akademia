@@ -40,7 +40,7 @@ export default withMermaid(
             text: "学习生活",
             collapsed: false,
             items: [
-              { text: "从成长到成才", link: "/guide/growth" },
+              { text: "从成长到成才", link: "/tutorial/growth" },
               { text: "开始使用生成式人工智能", link: "/tutorial/genai" },
               { text: "向学长学姐请教", link: "/tutorial/getting-advice-from-senior" },
               { text: "保研那点儿事", link: "/tutorial/baoyan" },

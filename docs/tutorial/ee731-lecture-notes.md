@@ -1,6 +1,6 @@
 # EE731 Lecture Notes: Matrix Computations for Signal Processing
 
-> [!NOTE]
+> [!INFO]
 > 原文档为 EE731 Lecture Notes: Matrix Computations for Signal Processing
 > 
 > James P. Reilly (c)
@@ -678,7 +678,7 @@ $$
 $$
 where $\mathbf{\mu}$ is the vector mean of the process and $E(\cdot)$ denotes the expectation operator over all possible windows of index $i$ of length $m$ in Fig. 2. Often we deal with zero-mean processes, in which case we have
 $$
-\mathbf{R}_{xx} = E[\mathbf{x}_i \mathbf{x}_i^T] = E \left[ \begin{pmatrix} x_1 \\ x_2 \\ \vdots \\ x_m \end{pmatrix} \begin{pmatrix} x_1 & x_2 & \cdots & x_m \end{pmatrix} \right] = E \begin{bmatrix} x_1x_1 & x_1x_2 & \cdots & x_1x_m \\ x_2x_1 & x_2x_2 & \cdots & x_2x_m \\ \vdots & \vdots & \ddots & \vdots \\ x_mx_1 & x_mx_2 & \cdots & x_mx_m \end{bmatrix}, \tag{45}
+\begin{aligned}\mathbf{R}_{xx}&=E[\mathbf{x}_{i} \mathbf{x}_{i}^{T} ]\\ &=E\left[ \begin{pmatrix}x_{1}\\ x_{2}\\ \vdots\\ x_{m}\end{pmatrix} \begin{pmatrix}x_{1}&x_{2}&\cdots&x_{m}\end{pmatrix} \right]\\ &=E\begin{bmatrix}x_{1}x_{1}&x_{1}x_{2}&\cdots&x_{1}x_{m}\\ x_{2}x_{1}&x_{2}x_{2}&\cdots&x_{2}x_{m}\\ \vdots&\vdots&\ddots&\vdots\\ x_{m}x_{1}&x_{m}x_{2}&\cdots&x_{m}x_{m}\end{bmatrix} ,\end{aligned} \tag{45}
 $$
 where $(x_1, x_2, \dots, x_m)^T = \mathbf{x}_i$. Taking the expectation over all windows, eq. (45) tells us that the element $r(1,1)$ of $\mathbf{R}_{xx}$ is by definition $E(x_1^2)$, which is the mean-square value (the preferred term is *variance*, whose symbol is $\sigma^2$) of the first element $x_1$ of all possible vector samples $\mathbf{x}_i$ of the process. But because of stationarity, $r(1,1) = r(2,2) = \dots, = r(m,m)$ which are all equal to $\sigma^2$. Thus all main diagonal elements of $\mathbf{R}_{xx}$ are equal to the variance of the process. The element $r(1,2) = E(x_1x_2)$ is the cross–correlation between the first element of $\mathbf{x}_i$ and the second element. Taken over all possible windows, we see this quantity is the cross–correlation of the process and itself delayed by one sample. Because of stationarity, $r(1,2) = r(2,3) = \dots = r(m-1, m)$ and hence all elements on the first upper diagonal are equal to the cross-correlation for a time-lag of one sample. Since multiplication is commutative, $r(2,1) = r(1,2)$, and therefore all elements on the first lower diagonal are also all equal to this same cross-correlation value. Using similar reasoning, all elements on the $j$th upper or lower diagonal are all equal to the cross-correlation value of the process for a time lag of $j$ samples. Thus we see that the matrix $\mathbf{R}_{xx}$ is highly structured.
 
@@ -1329,7 +1329,7 @@ where the columns of $\mathbf{V}$ are the eigenvectors of the covariance matrix 
 
 This fact may now be seen in a different light with the aid of this theorem. Suppose we retain the $j=r$ elements of a given $\mathbf{\theta}$ associated with the largest $r$ eigenvalues. Let $\tilde{\mathbf{\theta}} \triangleq [\theta_1, \theta_2, \dots, \theta_r, 0, \dots, 0]^T$ and $\tilde{\mathbf{x}} = \mathbf{V}\tilde{\mathbf{\theta}}$. Then
 $$
-\tilde{\mathbf{R}} = E(\tilde{\mathbf{x}}\tilde{\mathbf{x}}^T) = E(\mathbf{V}\tilde{\mathbf{\theta}}\tilde{\mathbf{\theta}}^T\mathbf{V}) = \mathbf{V} \begin{bmatrix} E|\theta_1|^2 & & & \\ & \ddots & & \\ & & E|\theta_r|^2 & \\ & & & \ddots \\ & & & & 0 \end{bmatrix} \mathbf{V}^T = \mathbf{V}\tilde{\mathbf{\Lambda}}\mathbf{V}^T, \tag{54}
+\begin{aligned}\tilde{\mathbf{R}}&=E(\tilde{\mathbf{x}} \tilde{\mathbf{x}}^{T} )\\ &=E(\mathbf{V} \tilde{\mathbf{\theta}} \tilde{\mathbf{\theta}}^{T} \mathbf{V} )\\ &=\mathbf{V} \begin{bmatrix}E|\theta_{1} |^{2}&&&\\ &\ddots&&\\ &&E|\theta_{r} |^{2}&\\ &&&\ddots\\ &&&&0\end{bmatrix} \mathbf{V}^{T}\\ &=\mathbf{V} \tilde{\mathbf{\Lambda}} \mathbf{V}^{T} ,\end{aligned} \tag{54}
 $$
 where $\tilde{\mathbf{\Lambda}} = \text{diag}[\lambda_1, \dots, \lambda_r, 0, \dots, 0]$. Since $\tilde{\mathbf{R}}$ is positive definite, square and symmetric, its eigendecomposition and singular value decomposition are identical; hence, $\lambda_i = \sigma_i, i=1, \dots, r$. Thus from this theorem, and (54), we know that the covariance matrix $\tilde{\mathbf{R}}$ formed from truncating the K-L coefficients is the closest rank–r matrix to the true covariance matrix $\mathbf{R}$ in the 2–norm sense.
 

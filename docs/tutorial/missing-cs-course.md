@@ -1,8 +1,7 @@
 # 计算机教育中缺失的一课
 
-> [!NOTE]
+> [!INFO]
 > 参照 MIT 在线课程 [The Missing Semester of Your CS Education](https://missing-semester-cn.github.io/) 翻译和改编。
-> 
 > 由 <Icon icon="simple-icons:googlegemini" href="https://gemini.google.com/"/>Gemini 2.5 Pro 生成，请对内容进行甄别。
 
 ## The Shell

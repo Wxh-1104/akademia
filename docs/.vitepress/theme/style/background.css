@@ -1,7 +1,7 @@
 :root {
-  --grid-size: 40px;
+  --grid-size: 20px;
   --grid-thickness: 1px;
-  --grid-color: rgba(0, 0, 0, 0.05); /* 亮色模式：黑色+15%透明 */
+  --grid-color: rgba(0, 0, 0, 0.05); /* 亮色模式：黑色+5%透明 */
 }
 
 html[data-theme="dark"] {

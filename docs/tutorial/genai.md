@@ -2,13 +2,13 @@
 
 作为一名大学生，能够熟练操作各种工具来辅助学习和生活是非常重要的技能。
 
-> [!TIP] <Icon icon="fa6-solid:user" width="18" style="vertical-align: -0.15em;"/> 用户
+> [!TIP] 用户
 > 
 > 为我解释这行C语言代码的原理：
 > 
 > main() { printf(&unix["\021%six\012\0"],(unix)["have"]+"fun"-0x60);}
 
-> [!NOTE] <Icon icon="fa7-brands:openai" width="20" style="vertical-align: -0.15em;"/> GPT-5
+> [!INFO] GPT-5
 > 
 > 好，这行代码属于典型的 **C语言“恶搞代码”**，它利用了数组和字符串字面量在 C 里的实现方式来写出看似晦涩难懂的代码。我们逐步拆解：
 > 

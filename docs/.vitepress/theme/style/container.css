@@ -36,6 +36,8 @@
 .custom-block {
   border-left-width: 8px;
   border-left-style: solid;
+  border-right-width: 8px;
+  border-right-style: solid;
   padding: 6px 8px 8px 14px !important;
 }
 
