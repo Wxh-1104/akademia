@@ -42,12 +42,15 @@ const EnhancedIcon = {
 import 'highlight.js/styles/github.css'
 import markdownPlayground from "./components/markdownPlayground.vue"
 
+import geminiChat from './components/geminiChat.vue'
+
 export default {
   ...DefaultTheme,
 
   enhanceApp({ app }) {
     app.component("Icon", EnhancedIcon);
-    app.component('MarkdownPlayground',markdownPlayground)
+    app.component('MarkdownPlayground', markdownPlayground)
+    app.component('GeminiChat', geminiChat)
   },
 }
 

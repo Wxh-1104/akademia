@@ -20,12 +20,18 @@ importers:
       '@codemirror/view':
         specifier: ^6.38.2
         version: 6.38.2
+      '@google/generative-ai':
+        specifier: ^0.24.1
+        version: 0.24.1
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
+      marked:
+        specifier: ^16.2.1
+        version: 16.2.1
     devDependencies:
       '@braintree/sanitize-url':
         specifier: ^7.1.1
@@ -391,6 +397,10 @@ packages:
     engines: {node: '>=12'}
     cpu: [x64]
     os: [win32]
+
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
+    engines: {node: '>=18.0.0'}
 
   '@iconify-json/simple-icons@1.2.50':
     resolution: {integrity: sha512-Z2ggRwKYEBB9eYAEi4NqEgIzyLhu0Buh4+KGzMPD6+xG7mk52wZJwLT/glDPtfslV503VtJbqzWqBUGkCMKOFA==}
@@ -1237,6 +1247,11 @@ packages:
     engines: {node: '>= 18'}
     hasBin: true
 
+  marked@16.2.1:
+    resolution: {integrity: sha512-r3UrXED9lMlHF97jJByry90cwrZBBvZmjG1L68oYfuPMW+uDTnuMbyJDymCWwbTE+f+3LhpNDKfpR3a3saFyjA==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
   mathjax-full@3.2.2:
     resolution: {integrity: sha512-+LfG9Fik+OuI8SLwsiR02IVdjcnRCy5MufYLi0C3TdMT56L/pjB0alMVGgoWJF8pN9Rc7FESycZB9BMNWIid5w==}
 
@@ -1923,6 +1938,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.21.5':
     optional: true
+
+  '@google/generative-ai@0.24.1': {}
 
   '@iconify-json/simple-icons@1.2.50':
     dependencies:
@@ -2878,6 +2895,8 @@ snapshots:
   markdown-it-task-checkbox@1.0.6: {}
 
   marked@15.0.12: {}
+
+  marked@16.2.1: {}
 
   mathjax-full@3.2.2:
     dependencies:
