@@ -5,15 +5,13 @@ import timeline from "vitepress-markdown-timeline";
 import markdownItFootnote from 'markdown-it-footnote';
 import markdownItTaskCheckbox from 'markdown-it-task-checkbox';
 
-
-// https://vitepress.dev/reference/site-config
 export default withMermaid(
   defineConfig({
     title: "Akademia",
     lang: 'zh-CN',
     description: "A VitePress Site",
     themeConfig: {
-      logo: '',
+      logo: './logo.svg',
 
       nav: [
         { text: "首页", link: "/" },
@@ -24,7 +22,8 @@ export default withMermaid(
         {
           text: "更多",
           items: [
-            { text: "外部链接示例", link: "https://vitepress.dev/" },
+            { text: "Markdown 编辑器", link: "/playground"},
+            { text: "VitePress 官网", link: "https://vitepress.dev/" },
           ]
         }
       ],

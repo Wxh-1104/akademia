@@ -64,6 +64,7 @@ body {
   font-family: var(--vp-font-family-base) !important;
   font-weight: 400 !important;
 }
+
 h1,
 h2,
 h3,
@@ -73,6 +74,7 @@ h6 {
   font-family: var(--vp-font-family-heading) !important;
   font-weight: 900 !important;
 }
+
 strong,
 b {
   font-weight: 800 !important;

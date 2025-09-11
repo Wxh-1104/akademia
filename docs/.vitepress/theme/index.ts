@@ -37,10 +37,17 @@ const EnhancedIcon = {
   },
 };
 
+// 自定义组件区
+
+import 'highlight.js/styles/github.css'
+import markdownPlayground from "./components/markdownPlayground.vue"
+
 export default {
   ...DefaultTheme,
 
   enhanceApp({ app }) {
     app.component("Icon", EnhancedIcon);
+    app.component('MarkdownPlayground',markdownPlayground)
   },
 }
+
