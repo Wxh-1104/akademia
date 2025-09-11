@@ -1,4 +1,8 @@
-# Markdown 编辑器
+# 功能实验室
+
+以下功能正在测试中，欢迎报告漏洞及提出宝贵意见！
+
+## Markdown 编辑器
 
 可以在下面自由编辑 Markdown。
 
@@ -7,6 +11,8 @@
 <ClientOnly>
   <MarkdownPlayground title="Akademia Markdown编辑器" />
 </ClientOnly>
+
+## Gemini 对话框
 
 下面是通过 API 密钥实现与 Gemini 对话的会话框：
 

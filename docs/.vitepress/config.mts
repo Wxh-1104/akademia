@@ -22,7 +22,7 @@ export default withMermaid(
         {
           text: "更多",
           items: [
-            { text: "Markdown 编辑器", link: "/playground"},
+            { text: "功能实验室", link: "/playground"},
             { text: "VitePress 官网", link: "https://vitepress.dev/" },
           ]
         }
