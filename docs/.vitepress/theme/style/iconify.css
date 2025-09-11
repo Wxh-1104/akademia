@@ -1,7 +1,7 @@
 .iconify {
   display: inline-block;
-  vertical-align: middle;
-  font-size: 1.25em;
+  vertical-align: -0.125em;
+  line-height: 1;
 }
 
 a.icon-link-wrapper {
