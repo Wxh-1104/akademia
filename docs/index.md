@@ -5,11 +5,7 @@ hero:
   name: Akademia
 
   tagline: 基于 VitePress 构建，集成了数学公式、流程图与自定义主题，旨在提供极致的阅读与创作体验。
-  
-  image:
-    src: ./logo.svg
-    alt: Akademia Logo
-  
+
   # 动作按钮
   actions:
     - theme: brand
@@ -17,7 +13,7 @@ hero:
       link: /guide/
       
     - theme: alt
-      text: 关于我
+      text: 关于本站
       link: /about
 
 features:

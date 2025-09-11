@@ -39,6 +39,8 @@
   border-right-width: 8px;
   border-right-style: solid;
   padding: 6px 8px 8px 14px !important;
+  position: relative;
+  overflow: hidden;
 }
 
 .custom-block-title {
@@ -65,6 +67,21 @@
   /* background-color 将在下面为每个容器单独指定 */
 }
 
+.custom-block::after {
+  content: "";
+  position: absolute;
+  right: 4px;   /* 控制水平位置 */
+  bottom: -12px;  /* 控制垂直位置 */
+  width: 56px;  /* 背景图宽度 */
+  height: 56px; /* 背景图高度 */
+  background-image: url("/logo.svg");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  opacity: 0.03; /* 透明度，避免喧宾夺主 */
+  pointer-events: none; /* 不阻挡交互 */
+}
+
 /* --- 为每种容器指定边框颜色、背景色和图标 --- */
 
 /* 1. Info */
@@ -74,7 +91,7 @@
 }
 .custom-block.info [class*="custom-block-title"]::before {
   background-color: var(--custom-block-info-left);
-  mask-image: url("/icons/material-symbols--info-outline-rounded.svg");
+  mask-image: url("/icons/custom-block.info.svg");
 }
 
 /* 2. Tip */
@@ -84,7 +101,7 @@
 }
 .custom-block.tip [class*="custom-block-title"]::before {
   background-color: var(--custom-block-tip-left);
-  mask-image: url("/icons/fa7-regular--lightbulb.svg");
+  mask-image: url("/icons/custom-block.tip.svg");
 }
 
 /* 3. Warning */
@@ -94,7 +111,7 @@
 }
 .custom-block.warning [class*="custom-block-title"]::before {
   background-color: var(--custom-block-warning-left);
-  mask-image: url("/icons/material-symbols--warning-outline-rounded.svg");
+  mask-image: url("/icons/custom-block.warning.svg");
 }
 
 /* 4. Danger */
@@ -104,7 +121,7 @@
 }
 .custom-block.danger [class*="custom-block-title"]::before {
   background-color: var(--custom-block-danger-left);
-  mask-image: url("/icons/fluent-emoji-high-contrast--alien-monster.svg");
+  mask-image: url("/icons/custom-block.danger.svg");
 }
 
 /* 5. Note */
@@ -114,7 +131,7 @@
 }
 .custom-block.note [class*="custom-block-title"]::before {
   background-color: var(--custom-block-note-left);
-  mask-image: url("/icons/fa7-regular--sticky-note.svg");
+  mask-image: url("/icons/custom-block.note.svg");
 }
 
 /* 6. Important */
@@ -124,8 +141,7 @@
 }
 .custom-block.important [class*="custom-block-title"]::before {
   background-color: var(--custom-block-important-left);
-  /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
-  mask-image: url("/icons/fa7-regular--bell.svg");
+  mask-image: url("/icons/custom-block.important.svg");
 }
 
 /* 7. Caution */
@@ -136,7 +152,7 @@
 .custom-block.caution [class*="custom-block-title"]::before {
   background-color: var(--custom-block-caution-left);
   /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
-  mask-image: url("/icons/material-symbols--crisis-alert-rounded.svg");
+  mask-image: url("/icons/custom-block.caution.svg");
 }
 
 .vp-doc .custom-block > :last-child {

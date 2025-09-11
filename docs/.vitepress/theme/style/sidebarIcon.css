@@ -36,15 +36,15 @@
 
 /* 1. 折叠的文件夹图标 (非链接) */
 #VPSidebarNav .VPSidebarItem:not(.is-link).collapsed > .item::before {
-  mask-image: url("/icons/material-symbols--folder-rounded.svg");
+  mask-image: url("/icons/sidebar-item.folder.svg");
 }
 
 /* 2. 展开的文件夹图标 (非链接) */
 #VPSidebarNav .VPSidebarItem:not(.is-link):not(.collapsed) > .item::before {
-  mask-image: url("/icons/material-symbols--folder-open-rounded.svg");
+  mask-image: url("/icons/sidebar-item.folder-opened.svg");
 }
 
 /* 3. 文件/页面图标 (链接) */
 #VPSidebarNav .VPSidebarItem.is-link > .item::before {
-  mask-image: url("/icons/material-symbols--description-rounded.svg");
+  mask-image: url("/icons/sidebar-item.document.svg");
 }
