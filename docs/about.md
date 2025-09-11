@@ -1,6 +1,6 @@
 # 关于本站
 
-本站使用 VitePress 构建，托管于 GitHub Pages。
+本站使用 VitePress 构建，托管于 Cloudflare Pages。
 
 ## 提交你的文档
 

@@ -1,1 +1,0 @@
-import{_ as t,c as e,o as a}from"./chunks/framework.BqMGeqrT.js";const _=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"tutorial/index.md","filePath":"tutorial/index.md","lastUpdated":1757521350000}'),r={name:"tutorial/index.md"};function o(n,i,s,d,c,p){return a(),e("div")}const m=t(r,[["render",o]]);export{_ as __pageData,m as default};
