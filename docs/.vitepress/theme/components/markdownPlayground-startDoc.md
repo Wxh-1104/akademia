@@ -26,11 +26,11 @@ $$
 2. 第二项
 3. 第三项
 
-访问外部链接 [VitePress](https://vitepress.dev) 以及引用文件也不在话下：
+访问外部链接 [VitePress](https://vitepress.dev) 以及引用外部文件也不在话下：
 
 ![本站图标](./logo.svg)
 
-你可以用 `` ` `` 包裹代码，例如：`print("Hello World")`。
+你可以用 `` ` `` 包裹代码，例如：`print("Hello World")`；
 
 也可以像这样：
 
@@ -45,7 +45,7 @@ greet("Alice")
 
 表格也非常直观：
 
-| 姓名    | 年龄 | 职业  |
+| 姓名 | 年龄 | 职业 |
 | ----- | -- | --- |
 | Alice | 25 | 工程师 |
 | Bob   | 30 | 设计师 |

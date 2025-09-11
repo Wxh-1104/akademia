@@ -6,11 +6,9 @@ hero:
 
   tagline: 基于 VitePress 构建，集成了数学公式、流程图与自定义主题，旨在提供极致的阅读与创作体验。
   
-  # 您可以在这里添加一个 Logo 或主视觉图 (可选)
-  # 将图片放在 public/ 目录下，然后在这里引用，例如:
-  # image:
-  #   src: /logo.svg
-  #   alt: Academia Logo
+  image:
+    src: ./logo.svg
+    alt: Akademia Logo
   
   # 动作按钮
   actions:
