@@ -10,6 +10,9 @@ export default withMermaid(
     title: "Akademia",
     lang: 'zh-CN',
     description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ],
     themeConfig: {
       logo: {
         light: '/logo-light.svg', // 亮色模式下用深色 logo
