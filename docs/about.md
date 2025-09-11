@@ -63,16 +63,22 @@ npm run docs:build
 > [!INFO]
 
 > [!TIP]
+> 这是一条提示，包含有助于用户更顺利达成目标的建议性信息。
 
-> [!WARNING]
+> [!WARNING] 警告
+> 这是一条警告。
 
-> [!IMPORTANT]
+> [!IMPORTANT] 牛顿第一定律
+> 假若施加于某物体的外力为零，则该物体的运动速度不变。
 
 > [!DANGER]
+> 危险区域，请勿继续！
 
 > [!NOTE]
+> This is a notebook.
 
 > [!CAUTION]
+> 行为可能带来的负面影响。
 
 
 ### 文档中显示 Mermaid 图表
@@ -108,12 +114,12 @@ sequenceDiagram
 ### 文档中高亮文本
 
 ```html
-<span class="marker">这里是尤雨溪的主页样式，鼠标放在我上面看效果</span>
+<span class="marker">据说该效果是从尤雨溪大大的主页上拿来的。</span>
 ```
 
 呈现效果：
 
-<span class="marker">这里是尤雨溪的主页样式，鼠标放在我上面看效果</span>
+> <span class="marker">据说该效果是从尤雨溪大大的主页上拿来的。</span>
 
 ### 文档中显示 Iconify 提供的图标
 

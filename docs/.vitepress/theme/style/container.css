@@ -11,8 +11,8 @@
   --custom-block-note-bg: #eef9fd;
   --custom-block-important-left: #a371f7;
   --custom-block-important-bg: #f4eefe;
-  --custom-block-caution-left: #e0575b;
-  --custom-block-caution-bg: #fde4e8;
+  --custom-block-caution-left: #e6a700;
+  --custom-block-caution-bg: #fff8e6;
 }
 
 .dark {
@@ -28,18 +28,20 @@
   --custom-block-note-bg: #193c47;
   --custom-block-important-left: #a371f7;
   --custom-block-important-bg: #230555;
-  --custom-block-caution-left: #e0575b;
-  --custom-block-caution-bg: #391c22;
+  --custom-block-caution-left: #e6a700;
+  --custom-block-caution-bg: #4d3800;
 }
 
 /* --- 容器基础样式 (为所有容器设置通用样式) --- */
 .custom-block {
-  border-left-width: 5px;
+  border-left-width: 8px;
   border-left-style: solid;
+  padding: 6px 8px 8px 14px !important;
 }
 
 .custom-block-title {
   font-size: 16px;
+  margin-bottom: -8px !important;
 }
 
 /* --- 图标通用基础样式 (关键部分) --- */
@@ -133,4 +135,8 @@
   background-color: var(--custom-block-caution-left);
   /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
   mask-image: url("/icons/material-symbols--crisis-alert-rounded.svg");
+}
+
+.vp-doc .custom-block > :last-child {
+  margin-bottom: 0;
 }
