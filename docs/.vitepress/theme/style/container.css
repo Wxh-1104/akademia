@@ -72,9 +72,9 @@
   position: absolute;
   right: 4px;   /* 控制水平位置 */
   bottom: -12px;  /* 控制垂直位置 */
-  width: 56px;  /* 背景图宽度 */
-  height: 56px; /* 背景图高度 */
-  background-image: url("/logo.svg");
+  width: 64px;  /* 背景图宽度 */
+  height:64px; /* 背景图高度 */
+  background-image: url("/logo-light.svg");
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;

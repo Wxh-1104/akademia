@@ -11,7 +11,10 @@ export default withMermaid(
     lang: 'zh-CN',
     description: "A VitePress Site",
     themeConfig: {
-      logo: './logo.svg',
+      logo: {
+        light: '/logo-light.svg', // 亮色模式下用深色 logo
+        dark: '/logo-dark.svg'    // 暗色模式下用浅色 logo
+      },
 
       nav: [
         { text: "首页", link: "/" },

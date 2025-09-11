@@ -28,7 +28,7 @@ $$
 
 访问外部链接 [VitePress](https://vitepress.dev) 以及引用外部文件也不在话下：
 
-![本站图标](./logo.svg)
+![本站图标](./logo-light.svg)
 
 你可以用 `` ` `` 包裹代码，例如：`print("Hello World")`；
 

@@ -58,28 +58,27 @@ npm run docs:build
 
 ### 文档中显示容器
 
-文档支持 `INFO`、`TIP`、`NOTE`、`IMPORTANT`、`WARNING`、`CAUTION`、`DANGER`容器：
+文档支持 `INFO`、`TIP`、`NOTE`、`IMPORTANT`、`WARNING`、`CAUTION`、`DANGER` 容器：
 
 > [!INFO]
 
 > [!TIP]
 > 这是一条提示，包含有助于用户更顺利达成目标的建议性信息。
 
-> [!WARNING] 警告
-> 这是一条警告。
+> [!NOTE]
+> This is a notebook.
 
 > [!IMPORTANT] 牛顿运动定律
 > 假若施加于某物体的外力为零，则该物体的运动速度不变。物体的动量随时间的变化率与受力成正比。相互作用的两个物体之间的作用力和反作用力大小相等，方向相反，作用在同一条直线上。
 
-> [!DANGER]
-> 危险区域，请勿继续！
-
-> [!NOTE]
-> This is a notebook.
+> [!WARNING] 警告
+> 这是一条警告。
 
 > [!CAUTION]
 > 行为可能带来的负面影响。
 
+> [!DANGER]
+> 危险区域，请勿继续！
 
 ### 文档中显示 Mermaid 图表
 
