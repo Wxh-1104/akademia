@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useData } from 'vitepress' // <- 用来读取当前页面的 frontmatter
 
 // --- Props ---
 const props = defineProps({
@@ -8,6 +9,11 @@ const props = defineProps({
     default: 'Background Music'
   }
 })
+
+// --- Read frontmatter to decide whether to show the player ---
+// floatingAudioPlayer 在页面 frontmatter 中设置为 false 时隐藏，未设置或为 true 时显示
+const { frontmatter } = useData()
+const showPlayer = computed(() => frontmatter?.value?.floatingAudioPlayer !== false)
 
 // --- State ---
 const audio = ref(null)
@@ -136,7 +142,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="audio-player-card">
+  <!-- 仅当 frontmatter 中 floatingAudioPlayer 未被显式设置为 false 时显示 -->
+  <div v-if="showPlayer" class="audio-player-card">
     <div class="song-title">{{ props.title }}</div>
     <div class="controls-row">
       <span class="time-display">{{ formattedCurrentTime }}</span>
