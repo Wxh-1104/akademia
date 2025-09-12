@@ -90,7 +90,7 @@ const togglePlay = () => {
 
 const onSeek = (e) => {
   const time = parseFloat(e.target.value)
-  currentTime.value = time // 拖动时只更新UI，不立即更新 audio.currentTime
+  currentTime.value = time
 }
 
 const startSeek = () => { isSeeking.value = true }
@@ -101,9 +101,57 @@ const endSeek = (e) => {
   if (audio.value) {
     audio.value.currentTime = time
     if (playing.value) {
-      audio.value.play() // 松开后继续播放
+      audio.value.play()
     }
   }
+}
+
+// --- 拖拽功能 ---
+const isDragging = ref(false)
+const position = ref({ x: 0, y: 0 }) // 存储 transform 的偏移量
+const dragStart = ref({ x: 0, y: 0 }) // 拖拽开始时鼠标的位置
+const initialPosition = ref({ x: 0, y: 0 }) // 拖拽开始时组件的位置
+
+const cardStyle = computed(() => ({
+  transform: `translate(${position.value.x}px, ${position.value.y}px)`
+}))
+
+const getEventCoords = (e) => (e.touches ? e.touches[0] : e)
+
+const onDragStart = (e) => {
+  // 不让拖拽进度条时移动整个组件
+  if (e.target.classList.contains('progress-bar')) return
+  
+  isDragging.value = true
+  const coords = getEventCoords(e)
+  dragStart.value = { x: coords.clientX, y: coords.clientY }
+  initialPosition.value = { ...position.value }
+  
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+  window.addEventListener('touchmove', onDragMove)
+  window.addEventListener('touchend', onDragEnd)
+}
+
+const onDragMove = (e) => {
+  if (!isDragging.value) return
+  
+  const coords = getEventCoords(e)
+  const dx = coords.clientX - dragStart.value.x
+  const dy = coords.clientY - dragStart.value.y
+  
+  position.value.x = initialPosition.value.x + dx
+  position.value.y = initialPosition.value.y + dy
+}
+
+const onDragEnd = () => {
+  if (!isDragging.value) return
+  isDragging.value = false
+  
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+  window.removeEventListener('touchmove', onDragMove)
+  window.removeEventListener('touchend', onDragEnd)
 }
 
 // --- Lifecycle ---
@@ -151,11 +199,24 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) observer.disconnect()
   window.removeEventListener('resize', checkViewport)
+  // 清理可能残留的拖拽事件监听器
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+  window.removeEventListener('touchmove', onDragMove)
+  window.removeEventListener('touchend', onDragEnd)
 })
 </script>
 
 <template>
-  <div v-if="showPlayer && isDesktop" class="audio-player-card">
+  <div 
+    v-if="showPlayer && isDesktop" 
+    class="audio-player-card"
+    :class="{ 'is-dragging': isDragging }"
+    :style="cardStyle"
+    @mousedown.left="onDragStart"
+    @touchstart.passive="onDragStart"
+  >
+    <!-- 为了更好的拖拽体验，将拖拽事件绑定在整个卡片上，但在样式中将标题设为拖拽手柄 -->
     <div class="song-title">{{ props.title }}</div>
     <div class="controls-row">
       <span class="time-display">{{ formattedCurrentTime }}</span>
@@ -199,13 +260,15 @@ onUnmounted(() => {
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  gap: 0; /* MODIFIED: Reduced distance between rows */
+  gap: 0;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: background 0.3s, border-color 0.3s;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  /* 初始时 transform 为 0 */
+  transform: translate(0, 0);
 }
 
 .dark .audio-player-card {
@@ -213,7 +276,16 @@ onUnmounted(() => {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* Top Row: Title */
+/* 拖拽时优化 */
+.audio-player-card.is-dragging {
+  /* 拖拽时移除 transition，避免延迟感 */
+  transition: none;
+  /* 增加阴影，有“浮起”的感觉 */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Top Row: Title - 作为拖拽手柄 */
 .song-title {
   text-align: center;
   font-size: 14px;
@@ -222,9 +294,18 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* 关键：将鼠标样式变为可拖拽状 */
+  cursor: grab;
+  /* 关键：防止拖拽时选中文字 */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .dark .song-title {
   color: #ddd;
+}
+/* 当卡片被拖拽时，手柄鼠标样式变为“抓紧” */
+.is-dragging .song-title {
+  cursor: grabbing;
 }
 
 /* Middle Row: Controls Layout */
@@ -233,7 +314,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 0 4px; /* MODIFIED: Move time displays slightly inwards */
+  padding: 0 4px;
   box-sizing: border-box;
 }
 
@@ -271,7 +352,7 @@ onUnmounted(() => {
 .time-display {
   font-size: 12px;
   color: #555;
-  text-align: center; /* Center the text inside its box */
+  text-align: center;
 }
 .dark .time-display {
   color: #aaa;
@@ -282,7 +363,7 @@ onUnmounted(() => {
   height: 10px;
   display: flex;
   align-items: center;
-  padding: 0 2px; /* MODIFIED: Align with the controls row */
+  padding: 0 2px;
   box-sizing: border-box;
 }
 
@@ -296,7 +377,6 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-/* Thumb (slider handle) styling for Webkit */
 .progress-bar::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -306,7 +386,6 @@ onUnmounted(() => {
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  /* MODIFIED: Vertically center the thumb on the track */
   margin-top: -1.1px; 
 }
 .dark .progress-bar::-webkit-slider-thumb {
@@ -314,7 +393,6 @@ onUnmounted(() => {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Thumb styling for Firefox */
 .progress-bar::-moz-range-thumb {
   width: 14px;
   height: 14px;

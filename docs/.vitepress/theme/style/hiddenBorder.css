@@ -1,12 +1,5 @@
 /* .vitepress\theme\style\hidden.css */
 :root {
-  /* 文档页Logo出文字下横条 */
-  @media (min-width: 960px) {
-    .VPNavBarTitle.has-sidebar .title {
-      border-bottom-color: transparent;
-    }
-  }
-
   /* 页脚横条隐藏 */
   .VPFooter {
     border-top: none;

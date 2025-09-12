@@ -49,5 +49,5 @@ const layoutClass = computed(() => {
   </Layout>
 
   <!-- 您的全局组件 -->
-  <AudioPlayer title="Reunited" />
+  <AudioPlayer title="Reunited - Toby Fox" />
 </template>

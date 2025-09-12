@@ -38,19 +38,3 @@
     backdrop-filter: blur(10px);
   }
 }
-
-/* 让导航栏背景撑满全屏 */
-.VPNavBar {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 !important;
-  border-radius: 0 !important; /* 去掉圆角 */
-}
-
-/* 让内部 container 也占满宽度 */
-.VPNavBar .container {
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding-left: 1rem;  /* 你可以调整左右间距 */
-  padding-right: 1rem;
-}
