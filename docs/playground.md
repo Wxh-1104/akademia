@@ -23,3 +23,5 @@ layoutClass: wide-page-layout
 下面是通过 API 密钥实现与 Gemini 对话的会话框：
 
 <GeminiChat />
+
+<AudioPlayer />

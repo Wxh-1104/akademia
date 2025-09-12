@@ -45,6 +45,8 @@ import markdownPlayground from "./components/markdownPlayground.vue"
 
 import geminiChat from './components/geminiChat.vue'
 
+import audioPlayer from './components/audioPlayer.vue'
+
 export default {
   ...DefaultTheme,
 
@@ -52,6 +54,7 @@ export default {
     app.component("Icon", EnhancedIcon);
     app.component('MarkdownPlayground', markdownPlayground)
     app.component('GeminiChat', geminiChat)
+    app.component('AudioPlayer', audioPlayer)
   },
 
   Layout: () => {
