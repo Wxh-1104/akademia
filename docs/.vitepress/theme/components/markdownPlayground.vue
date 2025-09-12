@@ -83,7 +83,7 @@ onMounted(() => {
       EditorView.theme({
         // --- 样式配置 (不变) ---
         "&": {
-          fontSize: "14px",
+          fontSize: "16px",
           fontFamily: "var(--vp-font-family-mono)",
           'font-feature-settings': "var(--vp-font-feature-settings-mono)",
           'font-variant-ligatures': "var(--vp-font-variant-ligatures-mono)",

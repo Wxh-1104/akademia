@@ -1,0 +1,13 @@
+.wide-page-layout {
+  --vp-layout-max-width: 1660px;
+
+  /* layout 样式 */
+  .container {
+    max-width: 95% !important;
+  }
+  .content-container,
+  .content {
+    max-width: 100% !important;
+    margin: 0 auto;
+  }
+}
