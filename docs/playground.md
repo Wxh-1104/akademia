@@ -15,7 +15,7 @@ layoutClass: wide-page-layout
 > [!WARNING] 本网页编辑器无法确保你的输入不会丢失，因此请及时将结果备份。
 
 <ClientOnly>
-  <MarkdownPlayground title="Akademia Markdown编辑器" />
+  <MarkdownPlayground title="Akademia Markdown 编辑器" />
 </ClientOnly>
 
 ## Gemini 对话框
@@ -23,5 +23,3 @@ layoutClass: wide-page-layout
 下面是通过 API 密钥实现与 Gemini 对话的会话框：
 
 <GeminiChat />
-
-<AudioPlayer />
