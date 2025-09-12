@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useData } from 'vitepress' // <- 用来读取当前页面的 frontmatter
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useData, useRoute } from 'vitepress'
 
 // --- Props ---
 const props = defineProps({
@@ -10,11 +10,6 @@ const props = defineProps({
   }
 })
 
-// --- Read frontmatter to decide whether to show the player ---
-// floatingAudioPlayer 在页面 frontmatter 中设置为 false 时隐藏，未设置或为 true 时显示
-const { frontmatter } = useData()
-const showPlayer = computed(() => frontmatter?.value?.floatingAudioPlayer !== false)
-
 // --- State ---
 const audio = ref(null)
 const playing = ref(false)
@@ -22,6 +17,29 @@ const isSeeking = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
 const isDark = ref(false)
+const isDesktop = ref(true)
+
+// --- 从 frontmatter 判断是否显示 ---
+const { frontmatter } = useData()
+const showPlayer = computed(() => frontmatter.value.floatingAudioPlayer !== false)
+
+// --- 页面切换时重置状态 ---
+const route = useRoute()
+watch(
+  () => route.path,
+  () => {
+    resetPlayer()
+  }
+)
+
+const resetPlayer = () => {
+  if (audio.value) {
+    audio.value.pause()
+    audio.value.currentTime = 0
+  }
+  playing.value = false
+  currentTime.value = 0
+}
 
 // --- Time Formatting ---
 const formatTime = (seconds) => {
@@ -45,16 +63,15 @@ const iconStyle = computed(() => {
   }
 })
 
-// --- Progress Bar Style ---
+// --- Progress Bar ---
 const progressPercentage = computed(() => {
   if (duration.value === 0) return 0
   return (currentTime.value / duration.value) * 100
 })
 
 const progressBarBackground = computed(() => {
-  const progressColor = isDark.value ? '#298459' : '#30a46c';
-  const trackColor = isDark.value ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
-  
+  const progressColor = isDark.value ? '#298459' : '#30a46c'
+  const trackColor = isDark.value ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
   return {
     background: `linear-gradient(to right, ${progressColor} ${progressPercentage.value}%, ${trackColor} ${progressPercentage.value}%)`
   }
@@ -72,50 +89,41 @@ const togglePlay = () => {
 }
 
 const onSeek = (e) => {
-  const time = parseFloat(e.target.value);
-  
-  // *** THIS IS THE FIX ***
-  // Manually update currentTime ref for immediate visual feedback on the progress bar.
-  currentTime.value = time;
-
-  if (audio.value) {
-    audio.value.currentTime = time;
-  }
+  const time = parseFloat(e.target.value)
+  currentTime.value = time // 拖动时只更新UI，不立即更新 audio.currentTime
 }
 
 const startSeek = () => { isSeeking.value = true }
+
 const endSeek = (e) => {
   isSeeking.value = false
-  // For paused state, we need to ensure the final position is set correctly.
-  if (audio.value && audio.value.paused) {
-    onSeek(e)
+  const time = parseFloat(e.target.value)
+  if (audio.value) {
+    audio.value.currentTime = time
+    if (playing.value) {
+      audio.value.play() // 松开后继续播放
+    }
   }
 }
 
-// --- Lifecycle & Theme Detection ---
+// --- Lifecycle ---
 let observer = null
+
+const checkViewport = () => {
+  isDesktop.value = window.innerWidth >= 960
+}
 
 onMounted(() => {
   if (audio.value) {
-    // --- THIS IS THE FIX ---
-    // A robust function to update duration
     const updateDuration = () => {
-      if (audio.value) {
-        duration.value = audio.value.duration
-      }
+      if (audio.value) duration.value = audio.value.duration
     }
-
-    // Check if metadata is already loaded.
-    // readyState >= 1 means metadata is available.
     if (audio.value.readyState >= 1) {
       updateDuration()
     } else {
-      // If not, wait for the event.
       audio.value.addEventListener('loadedmetadata', updateDuration)
     }
-    // --- END OF FIX ---
 
-    // The rest of the event listeners remain the same
     const onTimeUpdate = () => {
       if (!isSeeking.value) {
         currentTime.value = audio.value.currentTime
@@ -129,21 +137,25 @@ onMounted(() => {
     audio.value.addEventListener('ended', onEnded)
   }
 
-  const updateTheme = () => { isDark.value = document.documentElement.classList.contains('dark') }
+  const updateTheme = () => {
+    isDark.value = document.documentElement.classList.contains('dark')
+  }
   updateTheme()
-
   observer = new MutationObserver(updateTheme)
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
+  checkViewport()
+  window.addEventListener('resize', checkViewport)
 })
 
 onUnmounted(() => {
   if (observer) observer.disconnect()
+  window.removeEventListener('resize', checkViewport)
 })
 </script>
 
 <template>
-  <!-- 仅当 frontmatter 中 floatingAudioPlayer 未被显式设置为 false 时显示 -->
-  <div v-if="showPlayer" class="audio-player-card">
+  <div v-if="showPlayer && isDesktop" class="audio-player-card">
     <div class="song-title">{{ props.title }}</div>
     <div class="controls-row">
       <span class="time-display">{{ formattedCurrentTime }}</span>
