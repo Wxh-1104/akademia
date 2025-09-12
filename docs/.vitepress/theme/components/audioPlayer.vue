@@ -91,9 +91,26 @@ let observer = null
 
 onMounted(() => {
   if (audio.value) {
-    const onLoadedMetadata = () => { duration.value = audio.value.duration }
+    // --- THIS IS THE FIX ---
+    // A robust function to update duration
+    const updateDuration = () => {
+      if (audio.value) {
+        duration.value = audio.value.duration
+      }
+    }
+
+    // Check if metadata is already loaded.
+    // readyState >= 1 means metadata is available.
+    if (audio.value.readyState >= 1) {
+      updateDuration()
+    } else {
+      // If not, wait for the event.
+      audio.value.addEventListener('loadedmetadata', updateDuration)
+    }
+    // --- END OF FIX ---
+
+    // The rest of the event listeners remain the same
     const onTimeUpdate = () => {
-      // This condition is still needed to prevent audio playback from overriding user seeking.
       if (!isSeeking.value) {
         currentTime.value = audio.value.currentTime
       }
@@ -102,7 +119,6 @@ onMounted(() => {
       playing.value = false
       audio.value.currentTime = 0
     }
-    audio.value.addEventListener('loadedmetadata', onLoadedMetadata)
     audio.value.addEventListener('timeupdate', onTimeUpdate)
     audio.value.addEventListener('ended', onEnded)
   }
