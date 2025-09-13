@@ -60,9 +60,10 @@ export default withMermaid(
               { text: "计算机科学概览", link: "/tutorial/cs-overview" },
               { text: "每个计算机科学专业的学生应该知道什么？", link: "/tutorial/cs-should-know" },
               { text: "缺失的计科课程", link: "/tutorial/missing-cs-course" },
-              { text: "Python入门", link: "/tutorial/python-tutorial" },
-              { text: "NumPy完全入门指南", link: "/tutorial/numpy" },
+              { text: "Python 入门", link: "/tutorial/python-tutorial" },
+              { text: "NumPy 完全入门指南", link: "/tutorial/numpy" },
               { text: "Matrix Computations for Signal Processing翻译", link: "/tutorial/ee731-lecture-notes" },
+              { text: "C++ 入门", link: "/tutorial/cpp-tutorial" }
             ]
           },
         ],
