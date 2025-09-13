@@ -6,7 +6,7 @@ import { useData, useRoute } from 'vitepress'
 const props = defineProps({
   title: {
     type: String,
-    default: 'Background Music'
+    default: 'Music'
   }
 })
 
@@ -261,7 +261,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.1);

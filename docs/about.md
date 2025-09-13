@@ -1,3 +1,7 @@
+---
+layoutClass: wide-page-layout
+---
+
 # 关于本站
 
 本站使用 VitePress 构建，托管于 Cloudflare Pages。

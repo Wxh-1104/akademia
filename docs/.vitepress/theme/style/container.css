@@ -74,7 +74,6 @@
   bottom: -12px;  /* 控制垂直位置 */
   width: 64px;  /* 背景图宽度 */
   height:64px; /* 背景图高度 */
-  background-image: url("/logo-light.svg");
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
@@ -97,6 +96,9 @@
   background-color: var(--custom-block-info-left);
   mask-image: url("/icons/custom-block.info.svg");
 }
+.custom-block.info::after {
+  background-image: url("/icons/custom-block.info.svg");
+}
 
 /* 2. Tip */
 .custom-block.tip {
@@ -106,6 +108,9 @@
 .custom-block.tip [class*="custom-block-title"]::before {
   background-color: var(--custom-block-tip-left);
   mask-image: url("/icons/custom-block.tip.svg");
+}
+.custom-block.tip::after {
+  background-image: url("/icons/custom-block.tip.svg");
 }
 
 /* 3. Warning */
@@ -117,6 +122,9 @@
   background-color: var(--custom-block-warning-left);
   mask-image: url("/icons/custom-block.warning.svg");
 }
+.custom-block.warning::after {
+  background-image: url("/icons/custom-block.warning.svg");
+}
 
 /* 4. Danger */
 .custom-block.danger {
@@ -126,6 +134,9 @@
 .custom-block.danger [class*="custom-block-title"]::before {
   background-color: var(--custom-block-danger-left);
   mask-image: url("/icons/custom-block.danger.svg");
+}
+.custom-block.danger::after {
+  background-image: url("/icons/custom-block.danger.svg");
 }
 
 /* 5. Note */
@@ -137,6 +148,9 @@
   background-color: var(--custom-block-note-left);
   mask-image: url("/icons/custom-block.note.svg");
 }
+.custom-block.note::after {
+  background-image: url("/icons/custom-block.note.svg");
+}
 
 /* 6. Important */
 .custom-block.important {
@@ -146,6 +160,9 @@
 .custom-block.important [class*="custom-block-title"]::before {
   background-color: var(--custom-block-important-left);
   mask-image: url("/icons/custom-block.important.svg");
+}
+.custom-block.important::after {
+  background-image: url("/icons/custom-block.important.svg");
 }
 
 /* 7. Caution */
@@ -157,6 +174,9 @@
   background-color: var(--custom-block-caution-left);
   /* 确保这里的 SVG Data URL 已经移除了 fill 属性！ */
   mask-image: url("/icons/custom-block.caution.svg");
+}
+.custom-block.caution::after {
+  background-image: url("/icons/custom-block.caution.svg");
 }
 
 .vp-doc .custom-block > :last-child {
