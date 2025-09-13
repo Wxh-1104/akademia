@@ -106,7 +106,7 @@ export default withMermaid(
           }
         ],
         "/article/": [
-          { text: "杂谈首页", link: "/article/"}
+          { text: "杂谈首页", link: "/article/"},
           { text: "芥川龙之介", link: "/article/akutagawa" }
         ]
       },
