@@ -10,8 +10,7 @@
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-mathjax3": "^4.3.2",
     "markdown-it-task-checkbox": "^1.0.6",
-    "twemoji": "^14.0.2",
-    "vitepress": "^1.6.4",
+    "vitepress": "2.0.0-alpha.12",
     "vitepress-markdown-timeline": "^1.2.2",
     "vitepress-plugin-mermaid": "^2.0.17",
     "vue": "^3.5.21"
