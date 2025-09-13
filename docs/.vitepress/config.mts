@@ -24,6 +24,7 @@ export default withMermaid(
         { text: "指引", link: "/guide/" },
         { text: "课业", link: "/schoolwork/" },
         { text: "教程", link: "/tutorial/" },
+        { text: "杂谈", link: "/article/" },
         { text: "关于", link: "/about" },
         {
           text: "更多",
@@ -104,6 +105,9 @@ export default withMermaid(
             ]
           }
         ],
+        "/article/": [
+          { text: "芥川龙之介",  link: "Akutagawa" }
+        ]
       },
 
       socialLinks: [
