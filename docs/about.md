@@ -27,7 +27,138 @@ layoutClass: wide-page-layout
 
 ### 文档中显示代码块
 
-文档中可以使用 `code-group` 显示代码组，例如
+对于代码块中特定行的高亮，在前反引号的后面使用 `{}` 包裹行号。例如
+
+````markdown
+```typescript{3-5}
+export default withMermaid(
+  defineConfig({
+    title: "Akademia",
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+````
+
+会显示为
+
+```typescript{3-5}
+export default withMermaid(
+  defineConfig({
+    title: "Akademia",
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+
+也可以使用在特定行注释 `// [!code highlight]` 来高亮此行，或是通过 `// [!code highlight:<lines>]` 来高亮包括此行及其后的连续 `<lines>` 行。例如
+
+<pre>
+```typescript
+export default withMermaid(
+  defineConfig({
+    title: "Akademia", // [!code highlight]
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [ // [!code highlight:3]
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+</pre>
+
+会显示为
+
+```typescript
+export default withMermaid(
+  defineConfig({
+    title: "Akademia", // [!code highlight]
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [ // [!code highlight:3]
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+
+在某一行后添加 `// [!code focus]` 注释会聚焦该行，并模糊代码块的其他部分。同理，`// [!code focus:<lines>]` 会聚集从此行开始往后的连续 `<lines>`行。例如
+
+<pre>
+```typescript
+export default withMermaid(
+  defineConfig({
+    title: "Akademia", // [!code focus:3]
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+</pre>
+
+会显示为
+
+```typescript
+export default withMermaid(
+  defineConfig({
+    title: "Akademia", // [!code focus:3]
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+
+在某一行上添加注释 `// [!code ++]` 或 `// [!code --]` 将标注该行的增减差异。例如
+
+<pre>
+```typescript
+export default withMermaid(
+  defineConfig({
+    title: "academy", // [!code --]
+    title: "Akademia", // [!code ++]
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+</pre>
+
+会显示为
+
+```typescript
+export default withMermaid(
+  defineConfig({
+    title: "academy", // [!code --]
+    title: "Akademia", // [!code ++]
+    lang: 'zh-CN',
+    description: "A VitePress Site",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ]
+  })
+)
+```
+
+文档中还可以使用 `code-group` 显示代码组，例如
+
 ````markdown
 ::: code-group
 
@@ -146,7 +277,7 @@ sequenceDiagram
 > 要上主菜了：<Icon icon="simple-icons:cplusplus" href="https://isocpp.org/"/>C++ 像是一道老派硬菜，刀工精细却颇费火候；<Icon icon="fa7-brands:python" href="https://www.python.org/"/>Python 则是万能火锅，不论你是搞AI、写脚本还是做科研，什么食材都能涮进去；<Icon icon="fa7-brands:java" href="https://www.java.com/"/>Java 永远端着咖啡壶出场，讲究稳定与仪式感；<Icon icon="fa7-brands:golang" href="https://go.dev/"/> 上菜神速，好比小炒快手菜；而 <Icon icon="fa7-brands:rust" href="https://www.rust-lang.org/"/>Rust 厨师则强调“安全第一”，哪怕慢点，也绝不让你吃坏肚子。
 > 做菜的工具当然不能少：<Icon icon="devicon-plain:vscode" href="https://code.visualstudio.com/"/>VS Code 是万能瑞士军刀，几乎人手一把；<Icon icon="fa7-brands:git-alt" href="https://git-scm.com/"/>Git 就像账本，记录下每一步配方；<Icon icon="fa7-brands:linux" href="https://www.linux.org/"/>Linux 和 <Icon icon="fa7-brands:ubuntu" href="https://ubuntu.com/"/>Ubuntu 是那张稳固的铁桌子，不挑食材，啥都能放；<Icon icon="devicon-plain:bash" href="https://www.gnu.org/software/bash/"/>Bash 则像个碎碎念的老伙计，一边干活一边抱怨。要打包？交给 <Icon icon="fa7-brands:docker" href="https://www.docker.com/"/>Docker，装得下世界。
 > 调味料方面，La<Icon icon="fa7-brands:tex" href="https://www.latex-project.org/"/> 写得一手精美菜单，<Icon icon="devicon-plain:matlab" href="https://www.mathworks.com/products/matlab.html"/>Matlab 专攻奇怪的数学佐料，而 <Icon icon="fa7-brands:markdown" href="https://daringfireball.net/projects/markdown/"/>Markdown 则用简洁几笔记下菜谱。
-> 娱乐环节也安排上：<Icon icon="fa7-brands:bilibili" href="https://www.bilibili.com/"/>B站 永远热闹非凡；<Icon icon="fa7-brands:youtube" href="https://www.youtube.com/"/>YouTube 像世界厨艺大赛，什么风味都有；<Icon icon="fa7-brands:steam" href="https://www.steampowered.com/"/>Steam 则邀请大家打完游戏再来一顿夜宵；<Icon icon="fa7-brands:weibo" href="https://www.weibo.com/"/>微博和 <Icon icon="fa7-brands:x-twitter" href="https://x.com/"/> 则负责饭桌上的八卦调剂。
+> 娱乐环节也安排上：<Icon icon="fa7-brands:bilibili" href="https://www.bilibili.com/"/>B站永远热闹非凡；<Icon icon="fa7-brands:youtube" href="https://www.youtube.com/"/>YouTube 像世界厨艺大赛，什么风味都有；<Icon icon="fa7-brands:steam" href="https://www.steampowered.com/"/>Steam 则邀请大家打完游戏再来一顿夜宵；<Icon icon="fa7-brands:weibo" href="https://www.weibo.com/"/>微博和 <Icon icon="fa7-brands:x-twitter" href="https://x.com/"/> 则负责饭桌上的八卦调剂。
 > 查资料的时候，<Icon icon="fa7-brands:wikipedia-w" href="https://www.wikipedia.org/"/>ikipedia 就像随身百科全书，点菜遇到难题时，<Icon icon="fa7-brands:stack-overflow" href="https://stackoverflow.com/"/>Stack Overflow 总有人伸手帮你解围。
 > 邻桌也热闹：<Icon icon="fa7-brands:google" href="https://www.google.com/"/>oogle 像全知大厨，啥问题都能搜出答案；<Icon icon="simple-icons:googlegemini" href="https://gemini.google.com/"/>Gemini 喜欢秀一手新鲜花样；<Icon icon="fa7-brands:openai" href="https://openai.com/"/>OpenAI 则递上一碗 AI 汤，清爽解腻；<Icon icon="fa7-brands:apple" href="https://www.apple.com/"/>Apple 摆出的料理精致优雅，价格嘛你懂的；而 <Icon icon="simple-icons:nvidia" href="https://www.nvidia.com/"/>Nvidia 直接上了一锅显卡火锅，光影特效满天飞。
 > 最后，用 <Icon icon="fa7-brands:chrome" href="https://www.google.com/chrome/"/>Chrome 来检验菜谱，再通过 <Icon icon="fa7-brands:qq" href="https://www.qq.com/"/>QQ 和 <Icon icon="fa7-brands:weixin" href="https://weixin.qq.com/"/>微信把这场盛宴分享出去。放心，<Icon icon="fa7-brands:android" href="https://www.android.com/"/>Android 还会贴心提醒你饭后走两步，别光顾着写代码不消食。
@@ -162,7 +293,7 @@ VitePress 0.1.0 版本发布。
 ::: timeline 2024-03-21
 VitePress 1.0.0 版本发布：
 - Features:
-  - **theme:** allow selectively disabling external link icon on navbar items ([#3607](https://github.com/vuejs/vitepress/issues/3607)) ([5f6297c](https://github.com/vuejs/vitepress/commit/5f6297cb3df98926154235f31570e75820d4ea16))
+  - **theme:** allow selectively disabling external link icon on navbar items
 :::
 
 ::: timeline
@@ -176,7 +307,7 @@ VitePress 0.1.0 版本发布。
 ::: timeline 2024-03-21
 VitePress 1.0.0 版本发布：
 - Features:
-  - **theme:** allow selectively disabling external link icon on navbar items ([#3607](https://github.com/vuejs/vitepress/issues/3607)) ([5f6297c](https://github.com/vuejs/vitepress/commit/5f6297cb3df98926154235f31570e75820d4ea16))
+  - **theme:** allow selectively disabling external link icon on navbar items
 :::
 
 ::: timeline

@@ -1,4 +1,11 @@
-/* .vitepress/theme/style/vp-code.css */
+:root {
+  --vp-code-block-line-numbers-padding-left: 0;
+}
+
+div[class*="language-"].line-numbers-mode pre {
+  /* 使用变量来调整代码块行号与内容之间的距离 */
+  padding-left: var(--vp-code-block-line-numbers-padding-left);
+}
 
 /* 代码块：增加留空边距 增加阴影 */
 .vp-doc div[class*=language-] {

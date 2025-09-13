@@ -41,6 +41,7 @@
   padding: 6px 8px 8px 14px !important;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .custom-block-title {
@@ -77,12 +78,13 @@
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
-  opacity: 0.03; /* 透明度，避免喧宾夺主 */
+  opacity: 0.05; /* 透明度，避免喧宾夺主 */
   pointer-events: none; /* 不阻挡交互 */
+  z-index: -1;
 }
 
 .dark .custom-block::after {
-  background-image: url("/logo-dark.svg");
+  opacity: 0.2;
 }
 
 /* --- 为每种容器指定边框颜色、背景色和图标 --- */
