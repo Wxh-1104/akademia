@@ -49,6 +49,8 @@ import geminiChat from './components/geminiChat.vue'
 
 import audioPlayer from './components/audioPlayer.vue'
 
+import CcLicense from './components/ccLicense.vue'
+
 export default {
   ...DefaultTheme,
   
@@ -59,5 +61,6 @@ export default {
     app.component('MarkdownPlayground', markdownPlayground)
     app.component('GeminiChat', geminiChat)
     app.component('AudioPlayer', audioPlayer)
+    app.component('CcLicense', CcLicense)
   }
 }

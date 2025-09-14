@@ -4,8 +4,8 @@
   --grid-color: rgba(0, 0, 0, 0.05); /* 亮色模式：黑色+5%透明 */
 }
 
-html[data-theme="dark"] {
-  --grid-color: rgba(255, 255, 255, 0.15); /* 暗色模式：白色+15%透明 */
+.dark {
+  --grid-color: rgba(255, 255, 255, 0.05); /* 暗色模式：白色+15%透明 */
 }
 
 body::before {
