@@ -1,5 +1,6 @@
 ---
 layoutClass: wide-page-layout
+license: CC-BY-NC-SA-4.0
 ---
 
 # 关于本站

@@ -1,3 +1,7 @@
+---
+license: CC-BY-NC-SA-4.0
+---
+
 # Python 入门
 
 > [!INFO]

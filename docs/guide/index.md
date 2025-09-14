@@ -1,3 +1,7 @@
+---
+license: CC-BY-NC-ND-4.0
+---
+
 # 写在前面
 
 ![banner][guide-banner-image]

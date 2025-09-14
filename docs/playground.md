@@ -1,6 +1,7 @@
 ---
 sidebar: false
 layoutClass: wide-page-layout
+license: CC-BY-NC-SA-4.0
 ---
 
 # 功能实验室

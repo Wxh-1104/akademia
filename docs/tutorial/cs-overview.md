@@ -1,3 +1,7 @@
+---
+license: CC-BY-NC-SA-4.0
+---
+
 # 计算机科学概览
 
 ## 原点，星图，The First Echo

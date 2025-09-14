@@ -30,4 +30,5 @@ features:
     details: 精心调校的思源宋体与思源黑体排版，配合响应亮暗模式的自定义主题与图标，带来沉浸式的阅读享受。
 
 floatingAudioPlayer: false
+license: CC-BY-NC-SA-4.0
 ---

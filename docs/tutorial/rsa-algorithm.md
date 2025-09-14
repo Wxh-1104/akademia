@@ -1,5 +1,5 @@
 ---
-license: CC-BY-SA-4.0
+license: CC-BY-NC-SA-4.0
 ---
 
 # 非对称加密与 RSA 加密算法

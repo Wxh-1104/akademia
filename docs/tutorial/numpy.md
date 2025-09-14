@@ -1,3 +1,7 @@
+---
+license: CC-BY-NC-SA-4.0
+---
+
 # NumPy 完全入门指南
 
 > [!INFO] 

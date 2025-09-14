@@ -132,28 +132,32 @@ const license = licenseKey ? licenses[licenseKey] : null
 
 <style scoped>
 .cc-license-box {
-  margin-top: 1.5rem;
   margin-bottom: 16px;
   padding: 0.6rem 0.6rem;
-  border: 2px solid var(--vp-c-divider) ;
+  border: 3px dashed var(--vp-c-divider) ;
   border-radius: 20px;
   background: var(--vp-c-bg-alt);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 .cc-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: nowrap;
 }
 .cc-icons {
+  flex: 0 0 auto;
   display: flex;
   margin-right: 0.4rem;
 }
 .cc-icons img {
   height: 20px;
   margin-right: 4px;
+  vertical-align: middle;
 }
 .cc-text {
+  flex: 1;
   line-height: 1.2;
+  word-break: break-word;
 }
 </style>
