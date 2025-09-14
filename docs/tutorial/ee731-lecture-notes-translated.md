@@ -1,5 +1,5 @@
 > [!NOTE]
-> 由 <Icon icon="simple-icons:googlegemini" href="https://gemini.google.com/"/>Gemini 2.5 Pro 翻译。
+> 由 <Icon icon="simple-icons:googlegemini"/>Gemini 2.5 Pro 翻译。
 
 ## **0 前言**
 

@@ -6,7 +6,7 @@ license: CC-BY-NC-SA-4.0
 
 > [!INFO] 
 > 原文为 Matt Might 的 [What every computer science major should know](https://matt.might.net/articles/what-cs-majors-should-know/)。
-> 由 <Icon icon="simple-icons:googlegemini" href="https://gemini.google.com/"/>Gemini 2.5 Pro 翻译，请对内容进行甄别。
+> 由 <Icon icon="simple-icons:googlegemini"/>Gemini 2.5 Pro 翻译，请对内容进行甄别。
 
 鉴于该领域的迅猛发展，要辨别现代计算机科学学位应包含哪些内容已变得颇具挑战性。
 
