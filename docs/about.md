@@ -247,6 +247,8 @@ sequenceDiagram
 
 ### 文档中高亮文本
 
+使用如下格式：
+
 ```html
 <span class="marker">据说该效果是从尤雨溪大大的主页上拿来的。</span>
 ```

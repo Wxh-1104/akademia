@@ -12,6 +12,10 @@ div[class*="language-"].line-numbers-mode pre {
   padding-top: 20px;
 }
 
+.vp-doc [class*='language-'] code {
+  padding: 0 10px; /* 行号右侧竖线与代码之间的距离 */
+}
+
 /* 代码块：添加macOS风格的小圆点 */
 .vp-doc div[class*=language-]::before {
   content: "";
