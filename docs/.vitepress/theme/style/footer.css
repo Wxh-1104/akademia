@@ -8,5 +8,9 @@
 }
 
 .VPDoc {
+  padding-bottom: 32px !important;
+}
+
+.content {
   padding-bottom: 48px !important;
 }

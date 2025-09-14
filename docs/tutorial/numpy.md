@@ -1618,7 +1618,8 @@ $ cat np.csv
 # 如果您正在使用 Jupyter Notebook，您可能还希望运行以下
 # 代码行以在 notebook 中显示您的图表：
 
-%matplotlib inline```
+%matplotlib inline
+```
 
 要绘制您的值，您需要做的就是运行：
 
