@@ -30,7 +30,7 @@ layoutClass: wide-page-layout
 对于代码块中特定行的高亮，在前反引号的后面使用 `{}` 包裹行号。例如
 
 ````markdown
-```typescript{3-5}
+```typescript{3-5,7}
 export default withMermaid(
   defineConfig({
     title: "Akademia",
@@ -46,7 +46,7 @@ export default withMermaid(
 
 会显示为
 
-```typescript{3-5}
+```typescript{3-5,7}
 export default withMermaid(
   defineConfig({
     title: "Akademia",
@@ -58,6 +58,8 @@ export default withMermaid(
   })
 )
 ```
+
+其中第 `3-5` 行和第 `7` 行高亮显示。
 
 也可以使用在特定行注释 `// [!code highlight]` 来高亮此行，或是通过 `// [!code highlight:<lines>]` 来高亮包括此行及其后的连续 `<lines>` 行。例如
 
