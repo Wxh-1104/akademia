@@ -316,3 +316,16 @@ VitePress 1.0.0 版本发布：
 :::
 
 ::: timeline
+
+
+
+
+这是一个在 VitePress 中通过 WebAssembly 渲染的 TikZ 图表。
+
+<div class="tikz">
+  \begin{tikzpicture}
+    \draw[blue, thick] (0,0) circle (2cm);
+    \fill[red] (0,0) -- (30:2cm) arc (30:60:2cm) -- cycle;
+    \node at (0,0) {Hello VitePress!};
+  \end{tikzpicture}
+</div>
