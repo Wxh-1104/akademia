@@ -5,8 +5,6 @@ import timeline from "vitepress-markdown-timeline";
 import markdownItFootnote from 'markdown-it-footnote';
 import markdownItTaskCheckbox from 'markdown-it-task-checkbox';
 
-import { renderTikz } from './tikz-renderer.mjs';
-
 export default withMermaid(
   defineConfig({
     title: "Akademia",
@@ -154,47 +152,9 @@ export default withMermaid(
         md.use(timeline)
         md.use(markdownItTaskCheckbox)
         md.use(markdownItFootnote)
-
-        const defaultFenceRenderer = md.renderer.rules.fence;
-
-        // 重写代码块的渲染规则
-        md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-          const token = tokens[idx];
-          const lang = token.info.trim();
-
-          // 只对 'tikz' 语言的代码块进行特殊处理
-          if (lang === 'tikz') {
-            try {
-              // 调用我们的核心渲染引擎
-              const svgPathOrError = renderTikz(token.content);
-
-              // 如果成功，返回一个 <img> 标签
-              if (svgPathOrError.startsWith('/')) {
-                // 使用一个 div 包裹，方便通过 CSS 添加样式
-                return `<div class="tikz-container"><img src="${svgPathOrError}" alt="TikZ Diagram"></div>`;
-              } else {
-                // 如果失败，直接返回渲染器生成的错误 HTML
-                return svgPathOrError;
-              }
-            } catch (error) {
-              // 兜底的错误处理
-              return `<pre>Error rendering TikZ: ${error.message}</pre>`;
-            }
-          }
-
-          // 对于所有其他语言（js, ts, bash等），调用默认的渲染器
-          return defaultFenceRenderer(tokens, idx, options, env, self);
-        }
       },
     },
     cleanUrls: true,
     ignoreDeadLinks: false,
-    vite: {
-      assetsInclude: [
-      // 告诉 Vite，所有以 '/cache/tikz/' 开头的路径引用的都是静态资源
-      // 这样 Vite 就不会尝试将它们转换为 JS import，从而避免报错
-      '/cache/tikz/**' 
-    ]
-    }
   })
 )

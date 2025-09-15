@@ -1,81 +1,55 @@
-# 工作流名称，会显示在 GitHub Actions 页面
-name: Deploy VitePress Site to GitHub Pages
+name: Deploy VitePress site to Pages
 
-# 触发条件：当有代码推送到 main 分支时自动运行
 on:
   push:
     branches: [main]
-  # 允许你手动在 Actions 页面触发此工作流
+
   workflow_dispatch:
 
-# 权限设置：为工作流授予部署到 GitHub Pages 所需的权限
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 并发控制：确保同一时间只有一个部署在运行，自动取消旧的运行
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    # 运行环境：使用最新的 Ubuntu 系统
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # 步骤 1: 检出你的代码
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      # 步骤 2: 安装 pnpm 包管理器
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v3
         with:
-          version: 8 # 你可以根据需要指定 pnpm 版本
-
-      # 步骤 3: 设置 Node.js 环境
-      # pnpm action 会自动配置 Node.js 缓存
-      - name: Set up Node.js
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # 推荐使用 LTS 版本的 Node.js
-          cache: 'pnpm'
-
-      # 步骤 4: 安装系统级依赖 (LaTeX 和 pdf2svg)
-      # 这一步是关键，它创建了与你本地完全一致的编译环境
-      - name: Install LaTeX and pdf2svg
-        run: |
-          # 更新包列表并安装 pdf2svg
-          sudo apt-get update
-          sudo apt-get install -y pdf2svg
-          # 安装一个精简但功能完备的 TeX Live 发行版
-          # scheme-small 包含基础功能
-          # 我们额外添加 standalone, pgfplots, tikz, 和 xcolor 等核心宏包
-          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-science
-
-      # 步骤 5: 安装项目依赖
-      - name: Install project dependencies
+          node-version: 20
+          cache: pnpm
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Install dependencies
         run: pnpm install
-
-      # 步骤 6: 构建 VitePress 站点
-      # 我们的 pnpm docs:build 命令已经包含了清理和预渲染的步骤
-      - name: Build VitePress site
+      - name: Build with VitePress
         run: pnpm docs:build
-
-      # 步骤 7: 配置 GitHub Pages
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      # 步骤 8: 将构建产物打包为 artifact
-      # vitepress build 的输出目录是 docs/.vitepress/dist
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
 
-      # 步骤 9: 部署到 GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
