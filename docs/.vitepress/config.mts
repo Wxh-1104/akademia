@@ -11,21 +11,7 @@ export default withMermaid(
     lang: 'zh-CN',
     description: "A VitePress Site",
     head: [
-      [
-        'link',
-        {
-          rel: 'stylesheet',
-          type: 'text/css',
-          href: '/tikzjax/fonts.css' // <-- 修改路径
-        }
-      ],
-      // 2. 加载修改后的本地主脚本
-      [
-        'script',
-        {
-          src: '/tikzjax/tikzjax.js' // <-- 修改路径
-        }
-      ]
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ],
     themeConfig: {
       logo: {

@@ -51,7 +51,6 @@ import audioPlayer from './components/audioPlayer.vue'
 
 import CcLicense from './components/ccLicense.vue'
 
-
 export default {
   ...DefaultTheme,
   
