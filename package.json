@@ -7,6 +7,7 @@
     "cytoscape-cose-bilkent": "^4.1.0",
     "dayjs": "^1.11.18",
     "debug": "^4.4.1",
+    "glob": "^11.0.3",
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-mathjax3": "^4.3.2",
     "markdown-it-task-checkbox": "^1.0.6",
@@ -17,8 +18,9 @@
   },
   "type": "module",
   "scripts": {
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
+    "docs:render-tikz": "node scripts/render-tikz.mjs",
+    "docs:dev": "pnpm docs:render-tikz && vitepress dev docs --force",
+    "docs:build": "pnpm docs:render-tikz && vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {

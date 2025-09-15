@@ -240,7 +240,7 @@ onUnmounted(() => {
       />
     </div>
     <audio ref="audio" loop>
-      <source src="/music/bgm.mp3" type="audio/mpeg" />
+      <source src="./music/bgm.mp3" type="audio/mpeg" />
     </audio>
   </div>
 </template>
