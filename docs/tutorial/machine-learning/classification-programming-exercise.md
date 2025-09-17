@@ -444,7 +444,8 @@ def compare_train_validation(experiment: ml_edu.experiment.Experiment, validatio
 
 # 评估验证指标
 validation_metrics = experiment.evaluate(validation_features, validation_labels)
-compare_train_validation(experiment, validation_metrics)```
+compare_train_validation(experiment, validation_metrics)
+```
 
 看起来，在训练数据上达到约 92% 准确率的模型，在验证数据上仍然显示出约 90% 的准确率。我们能做得更好吗？让我们使用所有七个可用特征训练一个模型，并比较 AUC。
 

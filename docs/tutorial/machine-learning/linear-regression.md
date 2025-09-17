@@ -113,7 +113,7 @@ $y' = b + w_1x_1 + w_2x_2 + w_3x_3 + w_4x_4 + w_5x_5$
 
 **说明：** 在训练期间，模型会更新偏差和权重。 特征值是数据集的一部分，因此在训练期间不会更新。 预测结果不是在训练期间更新的。
 
-> **关键术语**：
+> [!IMPORTANT] **关键术语**
 > - [偏差](https://developers.google.com/machine-learning/glossary?hl=zh-cn#bias-math-or-bias-term)
 > - [功能](https://developers.google.com/machine-learning/glossary?hl=zh-cn#feature)
 > - [标签](https://developers.google.com/machine-learning/glossary?hl=zh-cn#label)
@@ -228,7 +228,7 @@ $L_1$ 损失与 $L_2$ 损失（或 MAE 与 MSE）之间的功能差异在于平�
 - [x] 右侧的模型。
     > 该行上的 8 个示例的总损失为 0。不过，尽管只有两个点在线外，但这两个点离线的距离依然是左图中离群点的 2 倍。平方损失进一步加大差异，因此两个单位的偏移量产生的损失是一个单位的 4 倍：$MSE = \frac{0^2 + 0^2 + 0^2 + 2^2 + 0^2 + 0^2 + 0^2 + 2^2 + 0^2 + 0^2} {10} = 0.8$
 
-> **关键术语**：
+> [!IMPORTANT] **关键术语**
 > - [平均绝对误差 (MAE)](https://developers.google.com/machine-learning/glossary?hl=zh-cn#mean-absolute-error-mae)
 > - [均方误差 (MSE)](https://developers.google.com/machine-learning/glossary?hl=zh-cn#mean-squared-error-mse)
 > - [$L_1$](https://developers.google.com/machine-learning/glossary?hl=zh-cn#l1-loss)
@@ -284,7 +284,7 @@ $L_1$ 损失与 $L_2$ 损失（或 MAE 与 MSE）之间的功能差异在于平�
     $$\small{Bias\ slope: -34.3}$$
     <details>
       <summary>
-        点击加号图标，了解如何计算斜率。
+        点击了解如何计算斜率。
       </summary>
       <p>
         为了获得与权重和偏差相切的直线的斜率，我们对损失函数相对于权重和偏差求导，然后求解方程。
@@ -433,7 +433,7 @@ $L_1$ 损失与 $L_2$ 损失（或 MAE 与 MSE）之间的功能差异在于平�
 
 对于此数据集，这将是最佳模型，因为没有其他权重和偏差值能生成损失更低的模型。
 
-> **关键术语：**
+> [!IMPORTANT] **关键术语**
 > - [Convergence](https://developers.google.com/machine-learning/glossary?hl=zh-cn#convergence)
 > - [凸函数](https://developers.google.com/machine-learning/glossary?hl=zh-cn#convex-function)
 > - [梯度下降法](https://developers.google.com/machine-learning/glossary?hl=zh-cn#gradient-descent)
@@ -552,15 +552,15 @@ $L_1$ 损失与 $L_2$ 损失（或 MAE 与 MSE）之间的功能差异在于平�
 
     **说明：** 将学习速率加倍可能会导致学习速率过大，从而导致权重“四处波动”，增加收敛所需的时间。与往常一样，最佳超参数取决于您的数据集和可用的计算资源。
 
-> **关键术语**：
-> *   [批次大小](https://developers.google.com/machine-learning/glossary?hl=zh-cn#batch-size)
-> *   [Epoch](https://developers.google.com/machine-learning/glossary?hl=zh-cn#epoch)
-> *   [广义化](https://developers.google.com/machine-learning/glossary?hl=zh-cn#generalization)
-> *   [超参数](https://developers.google.com/machine-learning/glossary?hl=zh-cn#hyperparameter)
-> *   [迭代](https://developers.google.com/machine-learning/glossary?hl=zh-cn#iteration)
-> *   [学习率](https://developers.google.com/machine-learning/glossary?hl=zh-cn#learning-rate)
-> *   [小批次](https://developers.google.com/machine-learning/glossary?hl=zh-cn#mini-batch)
-> *   [小批次随机梯度下降法](https://developers.google.com/machine-learning/glossary?hl=zh-cn#mini-batch-stochastic-gradient-descent)
-> *   [神经网络](https://developers.google.com/machine-learning/glossary?hl=zh-cn#neural-network)
-> *   [参数](https://developers.google.com/machine-learning/glossary?hl=zh-cn#parameter)
-> *   [随机梯度下降法](https://developers.google.com/machine-learning/glossary?hl=zh-cn#stochastic-gradient-descent-sgd)
+> [!IMPORTANT] **关键术语**
+> * [批次大小](https://developers.google.com/machine-learning/glossary?hl=zh-cn#batch-size)
+> * [Epoch](https://developers.google.com/machine-learning/glossary?hl=zh-cn#epoch)
+> * [广义化](https://developers.google.com/machine-learning/glossary?hl=zh-cn#generalization)
+> * [超参数](https://developers.google.com/machine-learning/glossary?hl=zh-cn#hyperparameter)
+> * [迭代](https://developers.google.com/machine-learning/glossary?hl=zh-cn#iteration)
+> * [学习率](https://developers.google.com/machine-learning/glossary?hl=zh-cn#learning-rate)
+> * [小批次](https://developers.google.com/machine-learning/glossary?hl=zh-cn#mini-batch)
+> * [小批次随机梯度下降法](https://developers.google.com/machine-learning/glossary?hl=zh-cn#mini-batch-stochastic-gradient-descent)
+> * [神经网络](https://developers.google.com/machine-learning/glossary?hl=zh-cn#neural-network)
+> * [参数](https://developers.google.com/machine-learning/glossary?hl=zh-cn#parameter)
+> * [随机梯度下降法](https://developers.google.com/machine-learning/glossary?hl=zh-cn#stochastic-gradient-descent-sgd)
