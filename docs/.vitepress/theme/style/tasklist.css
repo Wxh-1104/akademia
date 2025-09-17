@@ -1,13 +1,12 @@
-/* checkbox 颜色设置 */
+/* 暂时禁用样式
+
 li.task-list-item {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  /* margin: 2px 0 0; */
   list-style: inherit;
 }
 
-/* Target the last child element to push it to the next line */
 li.task-list-item ul:last-child {
   flex-basis: 100%;
   margin-right: 0;
@@ -66,3 +65,5 @@ li.task-list-item p {
   margin: 0;
   align-items: center;
 }
+
+*/

@@ -67,6 +67,16 @@ export default withMermaid(
               { text: "非对称加密与 RSA 加密算法", link: "/tutorial/rsa-algorithm" },
             ]
           },
+          {
+            text: "机器学习",
+            collapsed: false,
+            items: [
+              { text: "线性回归", link: "/tutorial/machine-learning/linear-regression" },
+              { text: "线性回归：编程练习", link: "/tutorial/machine-learning/linear-regression-programming-exercise" },
+              { text: "逻辑回归", link: "/tutorial/machine-learning/logistic-regression" },
+              { text: "分类：编程练习", link: "/tutorial/machine-learning/classification-programming-exercise"}
+            ]
+          }
         ],
         "/schoolwork/": [
           { text: "课业篇：写在前面", link: "/schoolwork/" },
