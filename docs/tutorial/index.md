@@ -335,3 +335,430 @@ println!("s1 = {s1}, s2 = {s2}");
 ```
 
 如果一个类型实现了 Copy trait，那么一个旧的变量在将其赋值给其他变量后仍然有效。类似整型这样的存储在栈上的类型都实现了 Copy trait。
+
+向函数传递值可能会移动或者复制，就像赋值语句一样。
+
+```rust
+fn main() {
+    let s = String::from("hello");  // s 进入作用域
+
+    takes_ownership(s);             // s 的值移动到函数里 ...
+    // println!("{}", s); 这里会报错，因为 s 的所有权被移动了
+
+    let x = 5;                      // x 进入作用域
+
+    makes_copy(x);                  // x 应该移动到函数里，但由于 i32 是 Copy 的类型
+    println!("{}", x);              // 所以在后面可继续使用 x
+
+} // 这里，应该是 x 先移出了作用域，然后是 s。但因为 s 的值已被移走，因此没有特殊之处
+
+fn takes_ownership(some_string: String) { // some_string 进入作用域
+    println!("{some_string}");
+} // 这里，some_string 移出作用域并调用 `drop` 方法。
+
+fn makes_copy(some_integer: i32) { // some_integer 进入作用域
+    println!("{some_integer}");
+} // 这里，some_integer 移出作用域。没有特殊之处
+```
+
+返回值也可以转移所有权。
+
+```rust
+fn main() {
+    let s1 = gives_ownership();        // gives_ownership 将它的返回值传递给 s1
+
+    let s2 = String::from("hello");    // s2 进入作用域
+
+    let s3 = takes_and_gives_back(s2); // s2 被传入 takes_and_gives_back，它的返回值又传递给 s3
+} // 此处，s3 移出作用域并被丢弃。s2 被 move，s1 移出作用域并被丢弃
+
+fn gives_ownership() -> String { // gives_ownership 将会把返回值传入调用它的函数
+    let some_string = String::from("yours"); // some_string 进入作用域
+    some_string // 返回 some_string 并将其移至调用函数
+}
+
+// 该函数将传入字符串并返回该值
+fn takes_and_gives_back(a_string: String) -> String {
+    // a_string 进入作用域
+    a_string  // 返回 a_string 并移出给调用的函数
+}
+```
+
+### 引用与借用
+
+Rust 提供了一个不用获取所有权就可以使用值的功能，叫做引用（references）。引用像一个指针，因为它是一个地址，我们可以由此访问储存于该地址的属于其他变量的数据。但与指针不同，引用在其生命周期内保证指向某个特定类型的有效值。用符号 & 来表示引用。将创建一个引用的行为称为借用（borrowing）。
+
+当函数使用引用而不是实际值作为参数，无需返回值来交还所有权，因为就不曾拥有所有权。
+
+```rust
+fn main() {
+    let s1 = String::from("hello");
+
+    let len = calculate_length(&s1); // 传入一个指向值 s1 的引用，但是并不拥有它
+
+    println!("The length of '{s1}' is {len}.");
+}
+
+fn calculate_length(s: &String) -> usize { // s 是 String 的引用
+    s.len()
+} // s 在这里离开作用域，但因为它并不拥有引用的值的所有权，所以什么也不会发生
+```
+
+正如变量默认是不可变的，引用也一样。（默认）不允许修改引用的值。但是可以通过可变引用（mutable reference）让我们修改引用指向的值。
+
+```rust
+fn main() {
+    let mut s = String::from("hello"); // s 必须是可变的
+
+    change(&mut s); // 传入 s 的可变引用
+}
+
+fn change(some_string: &mut String) { // some_string 是 String 的可变引用
+    some_string.push_str(", world"); // 修改引用指向的值
+}
+```
+
+可变引用有很大的限制：如果你有一个对该变量的可变引用，你就不能再创建对该变量的引用。也不能在拥有不可变引用的同时拥有可变引用。然而，多个不可变引用是可以的，因为不可变引用只能读取数据，不会影响其他引用者读取到的数据。这一限制以一种非常小心谨慎的方式允许可变性，防止同一时间对同一数据存在多个可变引用。好处是 Rust 可以在编译时就避免数据竞争（data race）。
+
+```rust
+let mut s = String::from("hello");
+
+let r1 = &s; // 没问题
+let r2 = &s; // 没问题
+let r3 = &mut s; // 编译错误，因为不能在拥有不可变引用的同时拥有可变引用
+```
+
+一个引用的作用域从声明的地方开始一直持续到最后一次使用为止。编译器可以在作用域结束之前判断不再使用的引用。
+
+```rust
+let mut s = String::from("hello");
+
+let r1 = &s; // 没问题
+let r2 = &s; // 没问题
+println!("{r1} and {r2}"); // 这是最后一次使用 r1 和 r2
+// 此位置之后 r1 和 r2 不再使用，所以它们的作用域到此结束
+
+let r3 = &mut s; // 虽然不能在拥有不可变引用的同时拥有可变引用，但是这里不会发生编译错误
+println!("{r3}");
+```
+
+在 Rust 中编译器确保引用永远也不会变成悬垂引用：当你拥有一些数据的引用，编译器确保数据不会在其引用之前离开作用域。
+
+```rust
+fn dangle() -> &String { // dangle 函数返回一个字符串的引用
+    let s = String::from("hello"); // s 是一个新字符串
+
+    &s // 返回字符串 s 的引用
+} // 这里 s 离开作用域并被丢弃，其内存被释放。编译错误，因为它试图返回一个指向已被释放内存的引用
+```
+
+综上，在任意给定时间，要么只能有一个可变引用，要么只能有多个不可变引用。引用必须总是有效的。
+
+### 切片（Slice）
+
+切片（slice）允许你引用集合中一段连续的元素序列，而不用引用整个集合。slice 是一种引用，所以它不拥有所有权。
+
+字符串 slice（string slice）是 String 中一部分值的引用，它看起来像这样：
+
+```rust
+let s = String::from("hello world");
+
+let hello = &s[0..5]; // 从索引 0 开始时，也可以不写两个点号之前的值，即 &s[..5]
+let world = &s[6..11]; // 到最后一个字节结束时，也可以不写两个点号之后的值，即 &s[6..]
+// 整个字符串 slice 可以省略两头的值，写作 &s[..]
+```
+
+此时的切片结构如下：
+
+```
+         s
++----------+-------+      +-------+-------+
+|   name   | value |      | index | value |
++----------+-------+      +-------+-------+
+|   ptr    |   ----------->   0   |   h   |
++----------+-------+      +-------+-------+
+|   len    |   11  |      |   1   |   e   |
++----------+-------+      +-------+-------+
+| capacity |   11  |      |   2   |   l   |
++----------+-------+      +-------+-------+
+                          |   3   |   l   |
+                          +-------+-------+
+       world              |   4   |   o   |
++----------+-------+      +-------+-------+
+|   name   | value |      |   5   |       |
++----------+-------+      +-------+-------+
+|   ptr    |   ----------->   6   |   w   |
++----------+-------+      +-------+-------+
+|   len    |   5   |      |   7   |   o   |
++----------+-------+      +-------+-------+
+                          |   8   |   r   |
+                          +-------+-------+
+                          |   9   |   l   |
+                          +-------+-------+
+                          |  10   |   d   |
+                          +-------+-------+
+```
+
+字符串 slice range 的索引必须位于有效的 UTF-8 字符边界内，如果尝试从一个多字节字符的中间位置创建字符串 slice，则程序将会因错误而退出。
+
+字符串字面值实际是一个指向二进制程序特定位置的 slice，类型是 &str，因此字符串字面值是不可变的，因为 &str 是一个不可变引用。
+
+字符串 slice 作为参数可以接收 String 或 &str，因为它们都可以被视为字符串 slice。
+
+除了字符串切片（&str），还可以创建数组切片。
+
+```rust
+let a = [1, 2, 3, 4, 5];
+let slice = &a[1..4]; // 创建一个指向数组 a 中元素 2、3、4 的切片
+// 这个 slice 的类型是 &[i32]，它会存储第一个集合元素的引用和一个集合总长度
+assert_eq!(slice, &[2, 3]); // 断言 slice 的值是否等于 &[2, 3]
+```
+
+## 结构体
+
+结构体（struct 或 structure），是一种自定义数据类型，允许你包装和命名多个相关的值，从而形成一个有意义的组合。
+
+和元组一样，结构体的每一部分可以是不同类型。但不同于元组，结构体需要命名各部分数据以便能清楚的表明其值的意义。因此，结构体不需要依赖顺序来指定或访问实例中的值。
+
+定义结构体时，需要使用 struct 关键字并为整个结构体命名。在后面的花括号中，定义每一部分数据的名字和类型，我们称为字段（field）。
+
+```rust
+struct User {
+    active: bool,
+    username: String,
+    email: String,
+    sign_in_count: u64,
+} // 如果在函数体内定义结构体，结尾处需要加分号
+
+struct User_updated {
+    active: mut bool, // 报错，不能在定义结构体时将某个字段标记为 mut
+    username: String,
+    email: String,
+    sign_in_count: u64,
+}
+```
+
+一旦定义了结构体，为了使用它，需要创建这个结构体的实例。创建实例时以结构体的名字开头，接着在花括号中使用 key: value 的形式提供字段。不能在定义结构体时将任一字段标记为 mut。
+
+默认情况下，实例是不可变的。若整个实例是可变的，则各个字段均为可变。
+
+```rust
+let user1 = User { // 创建一个 User 结构体的不可变实例 user1
+    active: true,
+    username: String::from("example_user"),
+    email: String::from("user1@example.com"),
+    sign_in_count: 1, // 各个字段的顺序无关紧要
+};
+
+user1.email = String::from("user1_updated@example.com"); // 报错，user1 是不可变实例，无法修改字段
+
+let mut user2 = User { // 创建一个 User 结构体的可变实例 user2
+    active: true,
+    username: String::from("another_user"),
+    email: String::from("user2@example.com"),
+    sign_in_count: 2,
+};
+
+user2.email = String::from("user2_updated@example.com"); // user2 是可变实例，可以修改字段
+```
+
+函数可以返回结构体的实例，这可以通过在最后一个表达式中构造一个结构体的新实例来隐式返回它。如果函数的参数名与字段名都完全相同，可以使用字段初始化简写语法（field init shorthand）
+
+```rust
+fn build_user(email: String, username: String) -> User { //函数参数名与 User 字段名相同
+    User {
+        active: true,
+        username, // 等价于 username: username,
+        email, // 等价于 email: email,
+        sign_in_count: 1,
+    }
+}
+```
+
+可以借助其他已有实例来创建新的实例，这种语法叫做结构体更新语法（struct update syntax）。使用 `已有实例.字段名` 语法来使用其他实例的字段值；使用 `..已有实例名` 语法来复制另一实例的其余字段值，注意此时必须放在最后。
+
+```rust
+fn main() {
+    let user1 = User {
+        active: true,
+        username: String::from("username1"),
+        email: String::from("someone@example.com"),
+        sign_in_count: 1,
+    };
+
+    let user2 = User {
+        active: user1.active, // 从 user1 复制 active 字段
+        username: String::from("username2"),
+        email: String::from("user2@example.com"),
+        sign_in_count: user1.sign_in_count, // 从 user1 复制 sign_in_count 字段
+    };
+
+    let user3 = User {
+        email: String::from("user3@example.com"),
+        ..user1 // 表示 user3 的其余字段与 user1 相同
+    };
+}
+```
+
+由于以上两种方式会将字段值从旧实例移动到新实例（相当于 `=` 赋值），因此如果旧实例的某个字段值没有实现 Copy trait，则旧实例的该字段将不再有效。
+
+```rust
+fn main() {
+    let user1 = User {
+        active: true,
+        username: String::from("username1"),
+        email: String::from("someone@example.com"),
+        sign_in_count: 1,
+    };
+
+    let user2 = User {
+        username: String::from("username2"), // 这是新的 username 字段，不会影响 user1.username
+        ..user1 // 这里会发生所有权的移动
+    };
+
+    println!("{}", user1.username); // 不会报错，因为 user2 创建了新的 username 字段
+
+    println!("{}", user2.email); // user2 的 email 字段值为 "someone@example.com"
+
+    println!("{}", user1.email); // 报错，user1 的 email 字段值已被移动到 user2
+
+    println!("{}", user1.sign_in_count); // 不会报错，因为 sign_in_count 实现了 Copy trait，所以值被复制而不是被移动
+}
+```
+
+你可以继续访问那些所有权未被移动的字段，但你不能再访问那些所有权已经被移动的字段。并且你不能再将旧实例作为一个整体来使用（例如 `let user4 = user1;`）。
+
+可以使结构体存储被其他对象拥有的数据的引用，不过这么做的话需要指定生命周期（lifetimes）。生命周期确保结构体引用的数据有效性跟结构体本身保持一致。如果你尝试在结构体中存储一个引用而不指定生命周期将是无效的。
+
+```rust
+struct User {
+    active: bool,
+    username: &str, // 报错，结构体中存储了一个引用，但没有指定生命周期
+    email: &str, // 报错，结构体中存储了一个引用，但没有指定生命周期
+    sign_in_count: u64,
+}
+```
+
+### 元组结构体（tuple structs）
+
+当你想给整个元组取一个名字，并使元组成为与其他元组不同的类型时，元组结构体是很有用的。元组结构体有着结构体名称，但没有具体的字段名，只有字段的类型。
+
+定义元组结构体时，以 struct 关键字和结构体名开头，后跟元组中的类型。
+
+元组结构体实例类似于元组，你可以将它们解构为单独的部分，也可以使用 `.索引` 来访问单独的值。与元组不同的是，解构元组结构体时必须写明结构体的类型。
+
+```rust
+fn main() {
+    struct Point(i32, i32, i32);
+    struct Color(i32, i32, i32); // 定义两个元组结构体 Point 和 Color
+
+    let black = Color(0, 0, 0);
+    let origin = Point(0, 0, 0); // 创建 Point 和 Color 的实例
+    // 即使它们的字段类型和数量相同，它们仍然是不同的类型
+
+    let (x, y, z) =  origin; // 报错，必须写明结构体的类型
+    let Point(x, y, z) = origin; // 不会报错，解构 Point 结构体实例
+
+    println!("{}", origin.0); // 使用 `.索引` 访问字段值
+}
+```
+
+类单元结构体（unit-like structs）是一个没有任何字段的结构体。它们类似于 `()` 类型。类单元结构体常常在你想要在某个类型上实现 trait 但不需要在类型中存储数据的时候发挥作用。定义和实例化类单元结构体的语法极其简单，不需要花括号或圆括号。
+
+```rust
+struct AlwaysEqual; // 定义一个类单元结构体 AlwaysEqual
+
+fn main() {
+    let subject = AlwaysEqual; // 创建 AlwaysEqual 的实例
+}
+```
+
+### 方法
+
+方法（method）与函数类似：它们都使用 fn 关键字和名称声明，可以拥有参数和返回值，同时包含在某处调用该方法时会执行的代码。不过方法与函数也有不同，方法在结构体的上下文中被定义，或者是枚举或 trait 对象的上下文被定义，而且第一个参数总是 `self` ——代表调用该方法的结构体实例。
+
+```rust
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle { // 为 Rectangle 结构体定义方法
+    fn area(&self) -> u32 { // 方法的第一个参数是 &self，self 代表当前 impl 块类型（即 Rectangle）的实例
+        self.width * self.height
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!(
+        "The area of the rectangle is {} square pixels.",
+        rect1.area() // 采用方法语法（method syntax）调用 Rectangle 的 area 方法
+    );
+}
+```
+
+这里，使用一个 impl 块来定义 Rectangle 结构体的方法，这个 impl 块中的所有内容都将与 Rectangle 类型相关联。`&self` 实际上是 `self: &Self` 的缩写。在一个 `impl` 块中，`Self` 类型是 `impl` 块的类型的别名。方法的第一个参数必须有一个名为 `self` 的 `Self` 类型的参数，只能用 `self` 这个名字来简化。
+
+之所以选择 `&self` 是因为我们并不想获取所有权，只希望能读取结构体中的数据，而不是写入。如果想要在方法中改变调用方法的实例，需要将第一个参数改为 `&mut self`。
+
+方法的名称可以与结构体其中一个字段名相同。Rust 能区分何时调用方法（加圆括号），何时访问字段（不加圆括号）。
+
+每个结构体都允许拥有多个 `impl` 块。
+
+```rust
+impl Rectangle {
+    fn width(&self) -> bool { // 方法名称与某一字段名称 width 相同
+        self.width > 0
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    if rect1.width() { //这里调用 width 方法返回的布尔值
+        println!("The rectangle has a nonzero width; it is {}", rect1.width); // 这里访问 width 字段的值
+    }
+}
+```
+
+Rust 具备自动引用和解引用（automatic referencing and dereferencing）的功能，方法调用是少数几种体现这种功能的地方之一。例如创建一个 `Rectangle` 实例 `rect1` 后再通过 `let rect = &rect1;` 来创建一个指向 `rect1` 的引用，此时能直接使用 `rect.area()` 来调用 `area` 方法，而不需要写成 `(*rect).area()`。Rust 会自动为我们添加解引用操作符。同理，Rust 还会自动添加 `&`、`&mut` 以便与方法签名匹配。
+
+### 关联函数
+
+所有在 `impl` 块中定义的函数被称为关联函数（associated functions），因为它们与 `impl` 后面的类型相关。我们可以定义不以 `self` 为第一参数的关联函数（因此就不是方法），因为它们并不作用于一个结构体的实例，而是作用于整个结构体类型。要调用这种关联函数，我们使用 `结构体名::关联函数名` 语法。
+
+不是方法的关联函数经常被用作是返回一个结构体新实例的构造函数。它们总是被命名为 `new`，因为 `new` 不是关键字，可以作为函数名。
+
+```rust
+impl Rectangle {
+    fn square(size: u32) -> Self { // 由于不以 self 为第一参数，它不是方法而是关联函数
+        Self {
+            width: size,
+            height: size,
+        } // 返回一个新的 Rectangle 实例，表明其作为构造函数的身份
+    }
+}
+
+fn main() {
+    let sq = Rectangle::square(3); // 调用关联函数 square，这里作为构造函数返回一个 Rectangle 实例
+
+    println!(
+        "The area of the square is {} square pixels.",
+        sq.area()
+    );
+}
+```
+
+关键字 `Self` 在函数的返回类型和函数体中，都是对 `impl` 关键字后所示类型的别名。
+
+## 枚举
+
+结构体给予你将字段和数据聚合在一起的方法，而枚举给予你一个途径去声明某个值是一个集合中的一员。
