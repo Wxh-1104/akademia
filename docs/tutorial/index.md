@@ -1479,3 +1479,22 @@ let row = vec![
                                    // 这样能够存放不同类型数据
 ];
 ```
+
+### 字符串 string
+
+Rust 的核心语言中只有一种字符串类型，字符串 slice `str`，它通常以被借用的形式（`&str`）出现。`String` 类型由 Rust 标准库提供，而不是编入核心语言，它是一种可增长、可变、可拥有、UTF-8 编码的字符串类型。
+
+很多 `Vec<T>` 上可用的操作在 `String` 中同样可用，事实上 `String` 被实现为 `vector` 的封装。
+
+- 使用 `new` 方法新建空的 `String`。
+- 对字符串字面值使用 `to_string` 方法可以创建对应的 `String`。也可以使用 `String::from` 函数来从字符串字面值创建 `String`。
+
+```rust
+let data = "initial contents"; // 字符串字面值
+
+let s = data.to_string(); // 将其转为 String
+
+let s = "initial contents".to_string(); // 也可以直接转换
+
+let s = String::from("hello"); // 使用函数进行创建
+```
