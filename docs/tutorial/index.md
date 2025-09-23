@@ -1498,3 +1498,154 @@ let s = "initial contents".to_string(); // 也可以直接转换
 
 let s = String::from("hello"); // 使用函数进行创建
 ```
+
+- `String` 可以用多种方法进行更新。
+- - 通过 `push` 方法将一个单独的字符附加到 `String` 后。
+- - 通过 `push_str` 方法来附加字符串 slice，使 `String` 增长。该方法不需要获取参数的所有权。
+- - 使用 `+` 运算符将两个 `String` 拼接为一个新的 `String`。注意：这里前一个参数是 `String`，而后一个参数必须是 `&str` 或 `&String` 类型。并且前一个参数会发生所有权移动。
+- - 也可以使用 `format!` 进行多个 `String` 的拼接。它会返回一个新 `String`。
+
+```rust
+let mut s1 = String::from("lo");
+s1.push('l'); // 使用 push 附加单个字符
+
+let mut s2 = String::from("foo");
+let s3 = "bar";
+s2.push_str(s3); // 使用 push_str 附加 &str
+println!("s2 is {s2}"); // s2 is foobar
+
+let s4 = String::from("Hello,");
+let s5 = String::from("world!");
+let s6 = s4 + &s5; // + 运算符连接 String 和 &String
+// 这里 s4 不再有效，其所有权已移动。因为底层实现是 fn add(self, s: &str) -> String {
+// s5 仍有效，因为使用的是它的引用，&String 会进行 Deref 强制转换成为 &str
+
+let s7 = format!("{s4} {s5}"); // 宏 format! 会使用引用因此不会获取任何参数的所有权
+```
+
+- 无法对字符串直接使用索引语法 `s[index]`。由于 `String` 是 `Vec<u8>` 的封装，实际存储的是各个字节的值，但由于各种字符所占字节数不尽相同，还存在一些特殊字符或辅助字符，Rust无法精确获取指定字符的对应字节，因此不允许使用单个值的索引。
+- - 能在方括号中使用 range 来创建字符串 slice，但是必须注意索引要对应实际的字节。
+
+```rust
+let hello = "Здравствуйте"; // 这是一个包含 12 个西里尔字母的字符串
+                            // 总共占 24 字节（每个字符 2 字节）
+let s = &hello[0..4]; // 使用 range 获取前 4 个字节，即头两个字符“Зд”
+
+let s = &hello[0..1]; // 运行时会发生 panic。只截取第一个字节是无效的
+```
+
+- 遍历字符串需要表明需要字符还是原始字节。对于单独的 Unicode 标量值使用 `chars` 方法，这样返回单个字符；对于原始字节使用 `bytes` 方法。
+
+```rust
+for c in "Зд".chars() { // 返回单个 Unicode 字符
+    println!("{c}");
+}
+// 输出：
+// З
+// д
+
+for b in "Зд".bytes() { // 返回单个字节值
+    println!("{b}");
+}
+// 输出：
+// 208
+// 151
+// 208
+// 180
+```
+
+### Hash Map 存储键值对
+
+`HashMap<K, V>` 类型储存了一个键类型 `K` 对应一个值类型 `V` 的映射。它通过一个哈希函数（hashing function）来实现映射。像 vector 一样，`HashMap` 将它的数据储存在堆上。`HashMap` 是同质的：所有的键必须是相同类型，值也必须都是相同类型。使用前需要声明路径 `std::collections::HashMap`。
+
+- 使用 `new` 函数创建一个空的 `HashMap`，并使用 `insert` 方法增加键值对。
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+```
+
+- 可以通过 `get` 方法并提供对应的键来从 `HashMap` 中获取值。此方法返回 `Option<&V>`（不存在对应键会返回 `None`），因此一般还会调用 `copied` 方法来获取一个 `Option<V>` 而不是 `Option<&V>`。
+
+```rust
+let team_name = String::from("Blue"); // 一个 HashMap 中存在的键
+let score = scores.get(&team_name) // get 方法获取键对应的值
+                  .copied()        // copied 方法将 Option<&V> 转为 Option<V>
+                  .unwrap_or(0);   // 调用 unwrap_or 在 scores 中没有该键所对应的项时将其设置为零  
+```
+
+- 使用 `for` 循环遍历每一个键值对。
+
+```rust
+for (key, value) in &scores { // 这里注意使用引用
+    println!("{key}: {value}");
+}
+```
+
+将键值对插入 `HashMap` 时，对于整型浮点型这种实现 `Copy` Trait 的类型会直接进行拷贝；像 `String` 这样拥有所有权的值，将被移动并归 `HashMap` 所有。如果将值的引用插入，这些值本身将不会被移动进 `HashMap`。但是这些引用指向的值必须至少在 `HashMap` 有效时也是有效的。
+
+`HashMap` 要求每个唯一的键只能同时关联一个值，但相等的值可以对应不同的键。
+
+- 可以用 `insert` 方法将已有键值对的值替换成新的。
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Blue"), 25); // 这里键 Blue 对应的值被替换为 25
+```
+
+- 有时会出现一种情况：键没有对应的值。可以用 `entry` 方法检查这一点。该方法返回一个枚举 `Entry`。`Entry` 的 `or_insert` 方法在键对应的值存在时就返回这个值的可变引用，如果不存在则将参数作为新值插入并返回新值的可变引用。
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+scores.insert(String::from("Blue"), 10);
+
+scores.entry(String::from("Yellow")).or_insert(50); // 由于键 Yellow 没有对应值，因此将 50 作为其值一并插入
+scores.entry(String::from("Blue")).or_insert(50); // 键 Blue 存在对应值
+
+println!("{scores:?}");
+```
+
+可以运用这一点同时更新键值对。例如：
+
+```rust
+use std::collections::HashMap;
+
+let text = "hello world wonderful world";
+
+let mut map = HashMap::new();
+
+for word in text.split_whitespace() {
+    let count = map.entry(word).or_insert(0);
+    *count += 1;
+}
+
+println!("{map:?}");
+```
+
+## 错误处理
+
+Rust 将错误分为两大类：可恢复的（recoverable）和不可恢复的（unrecoverable）错误。`Result<T, E>` 类型用于处理可恢复的错误，还有 `panic!` 宏在程序遇到不可恢复的错误时停止执行。
+
+### 用 `panic!` 处理不可恢复的错误
+
+执行会造成代码 panic 的操作（比如访问超过数组结尾的内容）或者显式调用 `panic!` 宏。这两种情况都会使程序 panic。当出现 panic 时会打印出一个错误信息，程序默认会开始展开（unwinding），这意味着 Rust 会回溯栈并清理它遇到的每一个函数的数据；另一种选择是直接终止（abort），即不清理数据就退出程序，此时程序使用的内存需要由操作系统来清理。可以在 `Cargo.toml` 的 `[profile]` 部分增加 `panic = 'abort'` 由展开切换为终止。
+
+```rust
+fn main() {
+    panic!("crash and burn"); // 圆括号内是输出的错误信息
+}
+```
+
+可以使用 `panic!` 被调用的函数的 backtrace 来寻找代码中出问题的地方。backtrace 是一个执行到目前位置所有被调用的函数的列表，阅读 backtrace 的关键是从头开始读直到发现你编写的文件。
+
+### 用 `Result` 处理可恢复的错误
