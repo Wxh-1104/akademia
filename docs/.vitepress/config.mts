@@ -62,6 +62,7 @@ export default withMermaid(
               { text: "缺失的计科课程", link: "/tutorial/missing-cs-course" },
               { text: "Python 入门", link: "/tutorial/python-tutorial" },
               { text: "NumPy 完全入门指南", link: "/tutorial/numpy" },
+              { text: "Pandas 快速入门", link: "/tutorial/pandas" },
               { text: "Matrix Computations for Signal Processing翻译", link: "/tutorial/ee731-lecture-notes" },
               { text: "C++ 入门", link: "/tutorial/cpp-tutorial" },
               { text: "非对称加密与 RSA 加密算法", link: "/tutorial/rsa-algorithm" },
