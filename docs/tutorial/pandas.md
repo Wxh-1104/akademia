@@ -8,7 +8,7 @@ license: CC-BY-NC-SA-4.0
 > 原文为 [10 minutes to pandas](https://pandas.pydata.org/pandas-docs/stable/user_guide/10min.html)。对应版本 `2.3(stable)`。
 > 由 <Icon icon="simple-icons:googlegemini"/>Gemini 2.5 Pro 翻译，请对内容进行甄别。
 
-这是一篇pandas的简短介绍，主要面向新用户。你可以在[Cookbook](https://pandas.pydata.org/pandas-docs/stable/user_guide/cookbook.html#cookbook)中看到更复杂的 рецепты。
+这是一篇pandas的简短介绍，主要面向新用户。你可以在[Cookbook](https://pandas.pydata.org/pandas-docs/stable/user_guide/cookbook.html#cookbook)中看到更复杂的诀窍。
 
 按照惯例，我们如下导入：
 ```python

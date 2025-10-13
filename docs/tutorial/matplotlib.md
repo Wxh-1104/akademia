@@ -90,7 +90,8 @@ data['d'] = np.abs(data['d']) * 100
 fig, ax = plt.subplots(figsize=(5, 2.7), layout='constrained')
 ax.scatter('a', 'b', c='c', s='d', data=data)
 ax.set_xlabel('entry a')
-ax.set_ylabel('entry b')```
+ax.set_ylabel('entry b')
+```
 
 ![quick start](https://matplotlib.org/stable/_images/sphx_glr_quick_start_002.png)
 

@@ -3,30 +3,36 @@
 
 @font-face {
   font-family: "Maple Mono";
-  src: url("/fonts/MapleMono-Regular.ttf.woff2") format("woff2");
-  font-weight: normal;
+  src: url("/fonts/MapleMono/MapleMono[wght].woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap; /* 优化字体加载，避免文本闪烁 */
 }
 @font-face {
   font-family: "Maple Mono";
-  src: url("/fonts/MapleMono-Bold.ttf.woff2") format("woff2");
-  font-weight: bold;
+  src: url("/fonts/MapleMono/MapleMono[wght].woff2") format("woff2");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Maple Mono";
-  src: url("/fonts/MapleMono-Italic.ttf.woff2") format("woff2");
-  font-weight: normal;
+  src: url("/fonts/MapleMono/MapleMono-Italic[wght].woff2") format("woff2");
+  font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Maple Mono";
-  src: url("/fonts/MapleMono-ExtraBoldItalic.ttf.woff2") format("woff2");
-  font-weight: bold;
+  src: url("/fonts/MapleMono/MapleMono-Italic[wght].woff2") format("woff2");
+  font-weight: 900;
   font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "LXGW WenKai";
+  src: url("/fonts/LXGWWenKai/LXGWWenKai-Regular.woff2") format("woff2");
   font-display: swap;
 }
 
@@ -78,6 +84,11 @@ h6 {
 strong,
 b {
   font-weight: 800 !important;
+}
+
+em {
+  font-family: 'LXGW WenKai', var(--vp-font-family-heading);
+  font-style: normal;
 }
 
 .vp-doc a {
