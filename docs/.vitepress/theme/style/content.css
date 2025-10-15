@@ -9,8 +9,20 @@
 
 .VPDoc {
   padding-bottom: 32px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .content {
   padding-bottom: 48px !important;
+}
+
+.content-container {
+  margin-left: 12px !important;
+  margin-right: 8px !important;
+  max-width: fit-content !important;
+}
+
+.aside {
+  padding-left: 12px !important;
 }

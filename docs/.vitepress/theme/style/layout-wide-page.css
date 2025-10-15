@@ -7,7 +7,7 @@
   }
   .content-container,
   .content {
-    max-width: 90% !important;
+    max-width: 100% !important;
     margin: 0 auto;
   }
 }

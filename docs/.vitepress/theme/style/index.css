@@ -1,11 +1,11 @@
 @import './var.css';
 @import './fonts.css';
+@import './content.css';
 @import './background.css';
 @import './blockquote.css';
 @import './container.css';
 @import './navbar.css';
 @import './hiddenBorder.css';
-@import './footer.css';
 @import './marker.css';
 @import './codeBlock.css';
 @import './codeGroup.css';
