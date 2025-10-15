@@ -1405,7 +1405,8 @@ Type:      function
 In [4]: len?
 Signature: len(obj, /)
 Docstring: Return the number of items in a container.
-Type:      builtin_function_or_method```
+Type:      builtin_function_or_method
+```
 
 和：
 
