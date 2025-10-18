@@ -122,7 +122,8 @@ export default withMermaid(
         ],
         "/article/": [
           { text: "杂谈首页", link: "/article/" },
-          { text: "芥川龙之介", link: "/article/akutagawa" }
+          { text: "芥川龙之介", link: "/article/akutagawa" },
+          { text: "你不能说些什么", link: "/article/what-you-cant-say" },
         ]
       },
 
