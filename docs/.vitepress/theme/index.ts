@@ -51,6 +51,9 @@ import audioPlayer from './components/audioPlayer.vue'
 
 import CcLicense from './components/ccLicense.vue'
 
+import navCard from './components/navCard.vue';
+import navCardGrid from './components/navCardGrid.vue';
+
 export default {
   ...DefaultTheme,
   
@@ -62,5 +65,7 @@ export default {
     app.component('GeminiChat', geminiChat)
     app.component('AudioPlayer', audioPlayer)
     app.component('CcLicense', CcLicense)
+    app.component('NavCard', navCard)
+    app.component('NavCardGrid', navCardGrid)
   }
 }
