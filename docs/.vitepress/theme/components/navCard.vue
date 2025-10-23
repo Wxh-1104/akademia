@@ -11,16 +11,16 @@
 defineProps({
   title: {
     type: String,
-    required: true
+    required: true,
   },
   description: {
     type: String,
-    required: false
+    required: false,
   },
   link: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
 </script>
 
@@ -35,6 +35,37 @@ defineProps({
   text-decoration: none;
   color: inherit;
   overflow: hidden;
+  position: relative;
+}
+
+.nav-card::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 100px !important;
+  height: 100px !important;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.25s;
+
+  background-color: var(--vp-c-brand);
+
+  mask-image: url("/icons/navCard-cursor.svg") !important;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+
+  -webkit-mask-image: url("/icons/navCard-cursor.svg") !important;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+
+  opacity: 0.1;
+}
+
+:deep(html.dark) .nav-card::after {
+  opacity: 0.1;
 }
 
 .nav-card:hover {
@@ -43,6 +74,8 @@ defineProps({
 
 .card-content {
   padding: 8px 10px 10px 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .title {
