@@ -15,11 +15,13 @@
 
 .content {
   padding-bottom: 48px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 
 .content-container {
-  margin-left: 12px !important;
-  margin-right: 8px !important;
+  margin-left: 28px !important;
+  margin-right: 28px !important;
   max-width: fit-content !important;
 }
 

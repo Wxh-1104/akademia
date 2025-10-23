@@ -23,27 +23,32 @@ license: CC-BY-NC-SA-4.0
   />
   <NavCard
     title="Comprehensive Rust🦀"
-    description="由 Android 团队开发，每节配备练习"
+    description="由 Android 团队开发，每节均配备练习"
     link="https://google.github.io/comprehensive-rust/zh-CN/index.html"
   />
   <NavCard
     title="Rust Cookbook"
-    description="通过代码实例展示 Rust 生态的一角"
+    description="通过代码实例展示 Rust 生态系统的一角"
     link="https://play.rust-lang.org/"
   />
   <NavCard
     title="Rust 参考手册"
-    description="对教科书的补充，适合进一步提高"
+    description="对教科书的补充，适合有语言基础者"
     link="https://rust-exercises.com/100-exercises/"
   />
   <NavCard
     title="The Rustonomicon"
-    description="对参考手册的进一步补充"
+    description="对参考手册的补充，适合有语言基础者"
     link="https://doc.rust-lang.org/nomicon/"
   />
   <NavCard
+    title="Effective Rust"
+    description="进一步精进 Rust 代码能力"
+    link="https://www.lurklurk.org/effective-rust/title-page.html"
+  />
+  <NavCard
     title="Rust 宏小册"
-    description="对 Rust 宏的深入理解"
+    description="深入理解 Rust 宏，适合有语言基础者"
     link="https://zjp-cn.github.io/tlborm/"
   />
   <NavCard

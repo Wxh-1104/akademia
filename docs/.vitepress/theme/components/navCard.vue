@@ -48,7 +48,7 @@ defineProps({
 .title {
   font-size: 1.2rem;
   font-weight: 600;
-  margin: 0 0 4px 0;
+  margin: 0 0 3px 0;
   line-height: 1.5;
   color: var(--vp-c-brand);
   white-space: nowrap;
@@ -57,7 +57,7 @@ defineProps({
 }
 
 .description {
-  font-size: 0.9rem;
+  font-size: 0.83rem;
   margin: 0;
   line-height: 1.5;
   color: var(--vp-c-text-2);
