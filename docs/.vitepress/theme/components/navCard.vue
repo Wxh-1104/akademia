@@ -34,6 +34,7 @@ defineProps({
   transition: border-color 0.25s, background-color 0.25s;
   text-decoration: none;
   color: inherit;
+  overflow: hidden;
 }
 
 .nav-card:hover {
@@ -41,14 +42,14 @@ defineProps({
 }
 
 .card-content {
-  padding: 12px 10px 10px 10px;
+  padding: 8px 10px 10px 12px;
 }
 
 .title {
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0 0 4px 0;
-  line-height: 20px;
+  line-height: 1.5;
   color: var(--vp-c-brand);
   white-space: nowrap;
   overflow: hidden;
@@ -58,7 +59,7 @@ defineProps({
 .description {
   font-size: 0.9rem;
   margin: 0;
-  line-height: 24px;
+  line-height: 1.5;
   color: var(--vp-c-text-2);
   white-space: nowrap;
   overflow: hidden;

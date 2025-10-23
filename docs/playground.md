@@ -8,6 +8,52 @@ license: CC-BY-NC-SA-4.0
 
 以下功能正在测试中，欢迎报告漏洞及提出宝贵意见！
 
+## 导航卡片
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="Rust 程序设计语言"
+    description="社区支持的最新版 Rust 标准教科书"
+    link="https://rust-exercises.com/100-exercises/"
+  />
+  <NavCard
+    title="100 Exercises"
+    description="通过 100 道练习从零学习 Rust"
+    link="https://rust-exercises.com/100-exercises/"
+  />
+  <NavCard
+    title="Comprehensive Rust🦀"
+    description="由 Android 团队开发，每节配备练习"
+    link="https://google.github.io/comprehensive-rust/zh-CN/index.html"
+  />
+  <NavCard
+    title="Rust Cookbook"
+    description="通过代码实例展示 Rust 生态的一角"
+    link="https://play.rust-lang.org/"
+  />
+  <NavCard
+    title="Rust 参考手册"
+    description="对教科书的补充，适合进一步提高"
+    link="https://rust-exercises.com/100-exercises/"
+  />
+  <NavCard
+    title="The Rustonomicon"
+    description="对参考手册的进一步补充"
+    link="https://doc.rust-lang.org/nomicon/"
+  />
+  <NavCard
+    title="Rust 宏小册"
+    description="对 Rust 宏的深入理解"
+    link="https://zjp-cn.github.io/tlborm/"
+  />
+  <NavCard
+    title="Rust Playground"
+    description="线上编译运行 Rust 代码的好去处"
+    link="https://play.rust-lang.org/"
+  />
+  
+</NavCardGrid>
+
 ## Markdown 编辑器
 
 可以在下面自由编辑 Markdown。
