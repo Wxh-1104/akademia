@@ -1,5 +1,5 @@
 <template>
-  <a :href="link" class="nav-card">
+  <a :href="link" class="nav-card" :style="cardStyle">
     <div class="card-content">
       <h3 class="title">{{ title }}</h3>
       <p class="description">{{ description }}</p>
@@ -8,7 +8,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
   title: {
     type: String,
     required: true,
@@ -21,6 +23,25 @@ defineProps({
     type: String,
     required: true,
   },
+  colorLight: {
+    type: String,
+    required: false
+  },
+  colorDark: {
+    type: String,
+    required: false
+  }
+});
+
+const cardStyle = computed(() => {
+  const styles = {};
+  if (props.colorLight) {
+    styles['--nav-card-color-light'] = props.colorLight;
+  }
+  if (props.colorDark) {
+    styles['--nav-card-color-dark'] = props.colorDark;
+  }
+  return styles;
 });
 </script>
 
@@ -36,6 +57,12 @@ defineProps({
   color: inherit;
   overflow: hidden;
   position: relative;
+
+  --nav-card-theme-color: var(--nav-card-color-light, var(--vp-c-brand));
+}
+
+html.dark .nav-card {
+  --nav-card-theme-color: var(--nav-card-color-dark, var(--vp-c-brand));
 }
 
 .nav-card::after {
@@ -49,7 +76,7 @@ defineProps({
   z-index: 0;
   transition: opacity 0.25s;
 
-  background-color: var(--vp-c-brand);
+  background-color: var(--nav-card-theme-color);
 
   mask-image: url("/icons/navCard-cursor.svg") !important;
   mask-size: contain;
@@ -64,12 +91,12 @@ defineProps({
   opacity: 0.1;
 }
 
-:deep(html.dark) .nav-card::after {
+html.dark .nav-card::after {
   opacity: 0.1;
 }
 
 .nav-card:hover {
-  border-color: var(--vp-c-brand);
+  border-color: var(--nav-card-theme-color);
 }
 
 .card-content {
@@ -83,7 +110,7 @@ defineProps({
   font-weight: 600;
   margin: 0 0 3px 0;
   line-height: 1.5;
-  color: var(--vp-c-brand);
+  color: var(--nav-card-theme-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
