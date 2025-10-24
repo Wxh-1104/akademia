@@ -10,6 +10,8 @@ license: CC-BY-NC-SA-4.0
 
 ## 导航卡片
 
+Rust 语言相关：
+
 <NavCardGrid :columns="5">
   <NavCard
     title="Rust 程序设计语言"
@@ -68,12 +70,60 @@ license: CC-BY-NC-SA-4.0
     colorDark="#dea584"
   />
   <NavCard
+    title="Rand Book"
+    description="对 Rand 库的详细介绍，适合快速上手"
+    link="https://rust-random.github.io/book/intro.html"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
     title="Rust Playground"
     description="线上编译运行 Rust 代码的好去处"
     link="https://play.rust-lang.org/"
     colorLight="#eb864c"
     colorDark="#dea584"
   />
+</NavCardGrid>
+
+AI 相关：
+
+<NavCardGrid :columns="4">
+  <NavCard
+    title="Google AI Studio"
+    description="访问最新的 Gemini 大模型（大部分无限额）"
+    link="https://aistudio.google.com/prompts/new_chat"
+    colorLight="#346bf1"
+    colorDark="#4fa0ff"
+  />
+  <NavCard
+    title="ChatGPT"
+    description="访问 ChatGPT（有使用限额）"
+    link="https://chatgpt.com/"
+    colorLight="#676767"
+    colorDark="#ddd"
+  />
+  <NavCard
+    title="Microsoft Copilot"
+    description="访问 Copilot（有使用限额）"
+    link="https://copilot.microsoft.com/"
+    colorLight="rgb(202, 125, 54)"
+    colorDark="rgb(253, 213, 182)"
+  />
+  <NavCard
+    title="deepseek"
+    description="访问 deepseek（无使用限额）"
+    link="https://chat.deepseek.com/"
+    colorLight="#2563eb"
+    colorDark="#a4b9e8"
+  />
+  <NavCard
+    title="动手学深度学习"
+    description="内容全面，适合有 Python 基础者学习"
+    link="https://zh.d2l.ai/"
+    colorLight="rgb(33, 150, 243)"
+    colorDark="#b3d4fc"
+  />
+  
 </NavCardGrid>
 
 ## Markdown 编辑器

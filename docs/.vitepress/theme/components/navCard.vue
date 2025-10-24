@@ -48,7 +48,7 @@ const cardStyle = computed(() => {
 <style scoped>
 .nav-card {
   display: block;
-  border: 1px solid var(--vp-c-bg-soft);
+  border: 1px dashed var(--vp-c-bg-soft);
   border-radius: 16px;
   height: 100%;
   background-color: var(--vp-c-bg-soft);

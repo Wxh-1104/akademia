@@ -17,7 +17,8 @@ defineProps({
 .nav-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.8rem;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
 }
 /* 当屏幕宽度大于等于 640px 时 (通常认为是平板或桌面) */
 @media (min-width: 640px) {
