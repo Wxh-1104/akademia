@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed } from "vue";
 
 const props = defineProps({
   title: {
@@ -25,21 +25,21 @@ const props = defineProps({
   },
   colorLight: {
     type: String,
-    required: false
+    required: false,
   },
   colorDark: {
     type: String,
-    required: false
-  }
+    required: false,
+  },
 });
 
 const cardStyle = computed(() => {
   const styles = {};
   if (props.colorLight) {
-    styles['--nav-card-color-light'] = props.colorLight;
+    styles["--nav-card-color-light"] = props.colorLight;
   }
   if (props.colorDark) {
-    styles['--nav-card-color-dark'] = props.colorDark;
+    styles["--nav-card-color-dark"] = props.colorDark;
   }
   return styles;
 });
@@ -48,7 +48,7 @@ const cardStyle = computed(() => {
 <style scoped>
 .nav-card {
   display: block;
-  border: 1px dashed var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-bg-soft);
   border-radius: 16px;
   height: 100%;
   background-color: var(--vp-c-bg-soft);
@@ -106,8 +106,9 @@ html.dark .nav-card::after {
 }
 
 .title {
+  font-family: var(--vp-font-family-base) !important;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: normal !important;
   margin: 0 0 3px 0;
   line-height: 1.5;
   color: var(--nav-card-theme-color);
