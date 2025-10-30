@@ -118,6 +118,13 @@ export default withMermaid(
               { text: "军事理论", link: "/schoolwork/sizheng/military-theory" },
               { text: "心理健康教育", link: "/schoolwork/sizheng/mental-health-education" },
             ]
+          },
+          {
+            text: "信管专业资料",
+            collapsed: false,
+            items: [
+              { text: "工业工程基础", link: "/schoolwork/xinguan/the-foundation-to-industrial-engineering" },
+            ]
           }
         ],
         "/article/": [
