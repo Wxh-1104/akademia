@@ -126,6 +126,18 @@ AI 相关：
   
 </NavCardGrid>
 
+其他编程语言：
+
+<NavCardGrid :columns="4">
+  <NavCard
+    title="现代 Javascript 教程"
+    description="内容较为全面且紧跟前沿标准"
+    link="https://zh.javascript.info/"
+    colorLight="#602620"
+    colorDark="#e3796a"
+  />
+</NavCardGrid>
+
 ## Markdown 编辑器
 
 可以在下面自由编辑 Markdown。
