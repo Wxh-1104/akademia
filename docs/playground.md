@@ -123,6 +123,13 @@ AI 相关：
     colorLight="rgb(33, 150, 243)"
     colorDark="#b3d4fc"
   />
+  <NavCard
+    title="RethinkFun 深度学习"
+    description="适合零基础者学习"
+    link="https://www.rethink.fun/"
+    colorLight="rgb(33, 150, 243)"
+    colorDark="#b3d4fc"
+  />
   
 </NavCardGrid>
 
