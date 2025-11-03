@@ -117,16 +117,23 @@ AI 相关：
     colorDark="#a4b9e8"
   />
   <NavCard
-    title="动手学深度学习"
-    description="内容全面，适合有 Python 基础者学习"
-    link="https://zh.d2l.ai/"
+    title="RethinkFun 深度学习"
+    description="内容浅显，讲解细致，适合有 Python 基础者学习"
+    link="https://www.rethink.fun/"
     colorLight="rgb(33, 150, 243)"
     colorDark="#b3d4fc"
   />
   <NavCard
-    title="RethinkFun 深度学习"
-    description="适合零基础者学习"
-    link="https://www.rethink.fun/"
+    title="Google 机器学习教育"
+    description="贴近实操，适合有 Python 基础者学习"
+    link="https://developers.google.com/machine-learning?hl=zh-cn"
+    colorLight="rgb(33, 150, 243)"
+    colorDark="#b3d4fc"
+  />
+  <NavCard
+    title="动手学深度学习"
+    description="内容全面，适合有 Python 基础者学习"
+    link="https://zh.d2l.ai/"
     colorLight="rgb(33, 150, 243)"
     colorDark="#b3d4fc"
   />
