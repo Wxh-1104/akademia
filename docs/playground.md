@@ -165,11 +165,32 @@ AI 相关：
     colorDark="#50b7e0"
   />
   <NavCard
+    title="Go Playground"
+    description="线上编译运行 Go 代码的好去处"
+    link="https://go.dev/play/"
+    colorLight="#007f9f"
+    colorDark="#50b7e0"
+  />
+  <NavCard
     title="ISO C++"
     description="标准化 C++ 官网，包含教程与资讯"
     link="https://isocpp.org/"
     colorLight="#4183c4"
     colorDark="#679cd0"
+  />
+  <NavCard
+    title="Ray Tracing in One Weekend 系列"
+    description="手搓你自己的 C++ 光线追踪，适合图形学爱好者"
+    link="https://raytracing.github.io/"
+    colorLight="#6e6e6e"
+    colorDark="#f0eeec"
+  />
+  <NavCard
+    title="CS自学指南"
+    description="大学计算机科学领域自学路线"
+    link="https://csdiy.wiki/"
+    colorLight="#0097a8"
+    colorDark="#00bdd6"
   />
 </NavCardGrid>
 

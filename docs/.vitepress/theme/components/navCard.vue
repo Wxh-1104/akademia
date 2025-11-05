@@ -1,8 +1,8 @@
 <template>
   <a :href="link" class="nav-card" :style="cardStyle">
     <div class="card-content">
-      <h3 class="title">{{ title }}</h3>
-      <p class="description">{{ description }}</p>
+      <h3 class="title" :title="title">{{ title }}</h3>
+      <p class="description" :title="description">{{ description }}</p>
     </div>
   </a>
 </template>
