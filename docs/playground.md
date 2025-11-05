@@ -142,13 +142,34 @@ AI 相关：
 
 其他编程语言：
 
-<NavCardGrid :columns="4">
+<NavCardGrid :columns="5">
   <NavCard
     title="现代 Javascript 教程"
     description="内容较为全面且紧跟前沿标准"
     link="https://zh.javascript.info/"
     colorLight="#602620"
     colorDark="#e3796a"
+  />
+  <NavCard
+    title="MDN Web Docs"
+    description="Web 开发的教程与文档"
+    link="https://developer.mozilla.org/zh-CN/"
+    colorLight="#044c9f"
+    colorDark="#a4cefe"
+  />
+  <NavCard
+    title="Go 官方教程"
+    description="Go 语言从零基础到进阶"
+    link="https://go.dev/learn/"
+    colorLight="#007f9f"
+    colorDark="#50b7e0"
+  />
+  <NavCard
+    title="ISO C++"
+    description="标准化 C++ 官网，包含教程与资讯"
+    link="https://isocpp.org/"
+    colorLight="#4183c4"
+    colorDark="#679cd0"
   />
 </NavCardGrid>
 
