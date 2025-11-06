@@ -87,7 +87,7 @@ Rust 语言相关：
 
 AI 相关：
 
-<NavCardGrid :columns="4">
+<NavCardGrid :columns="5">
   <NavCard
     title="Google AI Studio"
     description="访问最新的 Gemini 大模型（大部分无限额）"
@@ -97,14 +97,14 @@ AI 相关：
   />
   <NavCard
     title="ChatGPT"
-    description="访问 ChatGPT（有使用限额）"
+    description="访问 ChatGPT（有限额）"
     link="https://chatgpt.com/"
     colorLight="#676767"
     colorDark="#ddd"
   />
   <NavCard
     title="Microsoft Copilot"
-    description="访问 Copilot（有使用限额）"
+    description="访问 Copilot（有限额）"
     link="https://copilot.microsoft.com/"
     colorLight="rgb(202, 125, 54)"
     colorDark="rgb(253, 213, 182)"
@@ -194,7 +194,7 @@ AI 相关：
   />
   <NavCard
     title="清华大学开源软件镜像站"
-    description="汇集各开源软件镜像服务，并附配置教程"
+    description="汇集各开源软件镜像服务，附配置教程"
     link="https://mirrors.tuna.tsinghua.edu.cn/"
     colorLight="#0d6efd"
     colorDark="#6ea8fe"

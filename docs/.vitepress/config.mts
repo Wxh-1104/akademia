@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { faviconPlugin } from '../.vitepress/theme/plugins/navCardFavicon.mjs';
 
 import timeline from "vitepress-markdown-timeline";
 import markdownItFootnote from 'markdown-it-footnote';
@@ -7,6 +8,12 @@ import markdownItTaskCheckbox from 'markdown-it-task-checkbox';
 
 export default withMermaid(
   defineConfig({
+    vite: {
+      plugins: [
+        faviconPlugin()
+      ]
+    },
+
     title: "Akademia",
     lang: 'zh-CN',
     description: "A VitePress Site",
@@ -77,7 +84,7 @@ export default withMermaid(
               { text: "线性回归", link: "/tutorial/machine-learning/linear-regression" },
               { text: "线性回归：编程练习", link: "/tutorial/machine-learning/linear-regression-programming-exercise" },
               { text: "逻辑回归", link: "/tutorial/machine-learning/logistic-regression" },
-              { text: "分类：编程练习", link: "/tutorial/machine-learning/classification-programming-exercise"}
+              { text: "分类：编程练习", link: "/tutorial/machine-learning/classification-programming-exercise" }
             ]
           }
         ],

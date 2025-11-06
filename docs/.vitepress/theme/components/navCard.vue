@@ -4,7 +4,6 @@
       <img v-if="!isFallbackIcon" :src="displayIconUrl" alt="" class="favicon" />
       <div v-else class="favicon favicon-fallback"></div>
     </template>
-
     <div class="card-content">
       <h3 class="title" :title="title">{{ title }}</h3>
       <p class="description" :title="description">{{ description }}</p>
@@ -13,11 +12,13 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
+import faviconMap from 'virtual:favicon-map';
+import { simpleHash } from '../plugins/hash.mjs';
 
 const props = defineProps({
   title: { type: String, required: true },
-  description: { type: String, required: false },
+  description: { type: String, required: false, default: '' }, // 确保有默认值
   link: { type: String, required: true },
   colorLight: { type: String, required: false },
   colorDark: { type: String, required: false },
@@ -25,48 +26,20 @@ const props = defineProps({
 
 const cardStyle = computed(() => {
   const styles = {};
-  if (props.colorLight) {
-    styles['--nav-card-color-light'] = props.colorLight;
-  }
-  if (props.colorDark) {
-    styles['--nav-card-color-dark'] = props.colorDark;
-  }
+  if (props.colorLight) styles['--nav-card-color-light'] = props.colorLight;
+  if (props.colorDark) styles['--nav-card-color-dark'] = props.colorDark;
   return styles;
 });
 
-const FALLBACK_ICON_PATH = '/icons/navCard-fallback-favicon.svg'; 
-const displayIconUrl = ref('');
+const cardHash = computed(() => simpleHash(props.title + props.description));
+
+const FALLBACK_ICON_PATH = '/icons/navCard-fallback-favicon.svg';
+
+const displayIconUrl = computed(() => {
+  return faviconMap[cardHash.value] || FALLBACK_ICON_PATH;
+});
 
 const isFallbackIcon = computed(() => displayIconUrl.value === FALLBACK_ICON_PATH);
-
-const checkAndSetFavicon = (link) => {
-  if (!link || !link.startsWith('http')) {
-    displayIconUrl.value = '';
-    return;
-  }
-  try {
-    const url = new URL(link);
-    const googleFaviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`;
-    const img = new Image();
-    img.onload = () => {
-      if (img.naturalWidth <= 16) {
-        displayIconUrl.value = FALLBACK_ICON_PATH;
-      } else {
-        displayIconUrl.value = googleFaviconUrl;
-      }
-    };
-    img.onerror = () => {
-      displayIconUrl.value = FALLBACK_ICON_PATH;
-    };
-    img.src = googleFaviconUrl;
-  } catch (e) {
-    displayIconUrl.value = FALLBACK_ICON_PATH;
-  }
-};
-
-watch(() => props.link, (newLink) => {
-  checkAndSetFavicon(newLink);
-}, { immediate: true });
 </script>
 
 <style scoped>
