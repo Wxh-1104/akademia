@@ -155,6 +155,13 @@ html.dark .nav-card::after {
   border-radius: 4px;
   background-color: var(--vp-c-bg-soft);
   z-index: 2;
+
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.nav-card:hover .favicon {
+  opacity: 1;
 }
 
 .favicon-fallback {

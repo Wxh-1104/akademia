@@ -192,6 +192,27 @@ AI 相关：
     colorLight="#0097a8"
     colorDark="#00bdd6"
   />
+  <NavCard
+    title="清华大学开源软件镜像站"
+    description="汇集各开源软件镜像服务，并附配置教程"
+    link="https://mirrors.tuna.tsinghua.edu.cn/"
+    colorLight="#0d6efd"
+    colorDark="#6ea8fe"
+  />
+  <NavCard
+    title="Hello 算法"
+    description="多种编程语言的数据结构与算法教程，图解清晰"
+    link="https://www.hello-algo.com/"
+    colorLight="#349890"
+    colorDark="#00bda4"
+  />
+  <NavCard
+    title="Web 版 VS Code"
+    description="在此处远程连接你的 VS Code"
+    link="https://vscode.dev/?vscode-lang=zh-cn"
+    colorLight="#005fb8"
+    colorDark="#4daafc"
+  />
 </NavCardGrid>
 
 ## Markdown 编辑器
