@@ -117,6 +117,13 @@ AI 相关：
     colorDark="#a4b9e8"
   />
   <NavCard
+    title="prompts.chat"
+    description="收录了一些常用提示词，让 AI 对话更高效"
+    link="https://prompts.chat/"
+    colorLight="#059669"
+    colorDark="#10b981"
+  />
+  <NavCard
     title="RethinkFun 深度学习"
     description="内容浅显，讲解细致，适合有 Python 基础者学习"
     link="https://www.rethink.fun/"
@@ -136,6 +143,13 @@ AI 相关：
     link="https://zh.d2l.ai/"
     colorLight="rgb(33, 150, 243)"
     colorDark="#b3d4fc"
+  />
+  <NavCard
+    title="动手实战人工智能"
+    description="覆盖面更广，适合有 Python 基础者学习"
+    link="https://aibydoing.com/"
+    colorLight="#ae5630"
+    colorDark="#fff3cd"
   />
   
 </NavCardGrid>
@@ -179,6 +193,13 @@ AI 相关：
     colorDark="#679cd0"
   />
   <NavCard
+    title="C++ Primer, 5th Edition"
+    description="C++ 经典教材电子版，建议有一定外语阅读能力者使用"
+    link="https://cpp-primer.pages.dev/"
+    colorLight="#3451b2"
+    colorDark="#a8b1ff"
+  />
+  <NavCard
     title="微软 C++ 语言参考"
     description="在 Visual Studio 中学习 C++"
     link="https://learn.microsoft.com/zh-cn/cpp/cpp/"
@@ -193,11 +214,18 @@ AI 相关：
     colorDark="#f3f3f3"
   />
   <NavCard
+    title="菜鸟教程"
+    description="包含不同计算机领域的入门教程"
+    link="https://www.runoob.com/"
+    colorLight="#64854c"
+    colorDark="#96b97d"
+  />
+  <NavCard
     title="Programming Fonts"
     description="集合了大部分等宽字体，便于对比显示效果"
     link="https://www.programmingfonts.org/"
     colorLight="rgb(255, 106, 0)"
-    colorDark="#E0E0E0"
+    colorDark="rgb(255, 106, 0)"
   />
   <NavCard
     title="GAMES101"
