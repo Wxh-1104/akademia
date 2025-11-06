@@ -1,5 +1,10 @@
 <template>
   <a :href="link" class="nav-card" :style="cardStyle">
+    <template v-if="displayIconUrl">
+      <img v-if="!isFallbackIcon" :src="displayIconUrl" alt="" class="favicon" />
+      <div v-else class="favicon favicon-fallback"></div>
+    </template>
+
     <div class="card-content">
       <h3 class="title" :title="title">{{ title }}</h3>
       <p class="description" :title="description">{{ description }}</p>
@@ -8,41 +13,60 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: false,
-  },
-  link: {
-    type: String,
-    required: true,
-  },
-  colorLight: {
-    type: String,
-    required: false,
-  },
-  colorDark: {
-    type: String,
-    required: false,
-  },
+  title: { type: String, required: true },
+  description: { type: String, required: false },
+  link: { type: String, required: true },
+  colorLight: { type: String, required: false },
+  colorDark: { type: String, required: false },
 });
 
 const cardStyle = computed(() => {
   const styles = {};
   if (props.colorLight) {
-    styles["--nav-card-color-light"] = props.colorLight;
+    styles['--nav-card-color-light'] = props.colorLight;
   }
   if (props.colorDark) {
-    styles["--nav-card-color-dark"] = props.colorDark;
+    styles['--nav-card-color-dark'] = props.colorDark;
   }
   return styles;
 });
+
+const FALLBACK_ICON_PATH = '/icons/navCard-fallback-favicon.svg'; 
+const displayIconUrl = ref('');
+
+const isFallbackIcon = computed(() => displayIconUrl.value === FALLBACK_ICON_PATH);
+
+const checkAndSetFavicon = (link) => {
+  if (!link || !link.startsWith('http')) {
+    displayIconUrl.value = '';
+    return;
+  }
+  try {
+    const url = new URL(link);
+    const googleFaviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`;
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth <= 16) {
+        displayIconUrl.value = FALLBACK_ICON_PATH;
+      } else {
+        displayIconUrl.value = googleFaviconUrl;
+      }
+    };
+    img.onerror = () => {
+      displayIconUrl.value = FALLBACK_ICON_PATH;
+    };
+    img.src = googleFaviconUrl;
+  } catch (e) {
+    displayIconUrl.value = FALLBACK_ICON_PATH;
+  }
+};
+
+watch(() => props.link, (newLink) => {
+  checkAndSetFavicon(newLink);
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -57,7 +81,6 @@ const cardStyle = computed(() => {
   color: inherit;
   overflow: hidden;
   position: relative;
-
   --nav-card-theme-color: var(--nav-card-color-light, var(--vp-c-brand));
 }
 
@@ -75,19 +98,15 @@ html.dark .nav-card {
   pointer-events: none;
   z-index: 0;
   transition: opacity 0.25s;
-
   background-color: var(--nav-card-theme-color);
-
   mask-image: url("/icons/navCard-cursor.svg") !important;
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
-
   -webkit-mask-image: url("/icons/navCard-cursor.svg") !important;
   -webkit-mask-size: contain;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
-
   opacity: 0.1;
 }
 
@@ -125,5 +144,28 @@ html.dark .nav-card::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.favicon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: var(--vp-c-bg-soft);
+  z-index: 2;
+}
+
+.favicon-fallback {
+  background-color: var(--nav-card-theme-color);
+  mask-image: url("/icons/navCard-fallback-favicon.svg");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url("/icons/navCard-fallback-favicon.svg");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
 }
 </style>
