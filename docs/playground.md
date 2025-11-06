@@ -207,6 +207,20 @@ AI 相关：
     colorDark="#e0b7fe"
   />
   <NavCard
+    title="Python 官方中文文档与教程"
+    description="全面的原生 Python 参考资源"
+    link="https://docs.python.org/zh-cn/"
+    colorLight="#0072aa"
+    colorDark="#7af"
+  />
+  <NavCard
+    title="Java 官方教程"
+    description="Oracle 推出的 Java 教程，建议有一定外语阅读能力者使用"
+    link="https://dev.java/learn/"
+    colorLight="#aa2e00"
+    colorDark="#e76f00"
+  />
+  <NavCard
     title="DevDocs"
     description="将海量 API 技术文档集结一处，方便查阅"
     link="https://devdocs.io/"
