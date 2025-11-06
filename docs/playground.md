@@ -179,6 +179,34 @@ AI 相关：
     colorDark="#679cd0"
   />
   <NavCard
+    title="微软 C++ 语言参考"
+    description="在 Visual Studio 中学习 C++"
+    link="https://learn.microsoft.com/zh-cn/cpp/cpp/"
+    colorLight="#5c2d91"
+    colorDark="#e0b7fe"
+  />
+  <NavCard
+    title="DevDocs"
+    description="将海量 API 技术文档集结一处，方便查阅"
+    link="https://devdocs.io/"
+    colorLight="#3377c0"
+    colorDark="#f3f3f3"
+  />
+  <NavCard
+    title="Programming Fonts"
+    description="集合了大部分等宽字体，便于对比显示效果"
+    link="https://www.programmingfonts.org/"
+    colorLight="rgb(255, 106, 0)"
+    colorDark="#E0E0E0"
+  />
+  <NavCard
+    title="GAMES101"
+    description="计算机图形学入门级强推课程"
+    link="https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html"
+    colorLight=""
+    colorDark=""
+  />
+  <NavCard
     title="Ray Tracing in One Weekend 系列"
     description="手搓你自己的 C++ 光线追踪，适合图形学爱好者"
     link="https://raytracing.github.io/"
@@ -213,6 +241,7 @@ AI 相关：
     colorLight="#005fb8"
     colorDark="#4daafc"
   />
+
 </NavCardGrid>
 
 ## Markdown 编辑器
