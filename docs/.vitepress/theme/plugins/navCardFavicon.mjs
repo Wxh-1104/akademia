@@ -1,28 +1,26 @@
-// .vitepress/plugins/faviconPlugin.mjs
 import fs from 'node:fs';
 import path from 'node:path';
 import { glob } from 'glob';
-import { simpleHash } from './hash.mjs'; // 1. 导入哈希函数
+import { simpleHash } from './hash.mjs';
 
 const VIRTUAL_MODULE_ID = 'virtual:favicon-map';
 const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID;
 
 export function faviconPlugin(options = {}) {
-  // ... 配置保持不变 ...
   const {
     docsDir = 'docs',
-    iconOutputDir = 'docs/public/nav-card-favicons',
-    mapFile = 'docs/public/nav-card-favicons/favicon-map.json',
+    iconOutputDir = 'docs/public/temp/nav-card-favicons',
+    mapFile = 'docs/public/temp/nav-card-favicons/favicon-map.json',
   } = options;
 
   let finalHashMap = {};
 
   return {
     name: 'vitepress-favicon-fetcher',
-    resolveId(id) { /* ... 保持不变 ... */
+    resolveId(id) {
       if (id === VIRTUAL_MODULE_ID) return RESOLVED_VIRTUAL_MODULE_ID;
     },
-    load(id) { /* ... 保持不变 ... */
+    load(id) {
       if (id === RESOLVED_VIRTUAL_MODULE_ID) {
         return `export default ${JSON.stringify(finalHashMap)}`;
       }
@@ -30,12 +28,9 @@ export function faviconPlugin(options = {}) {
     async buildStart() {
       console.log('[Favicon Plugin] Starting favicon fetch process...');
 
-      // --- 核心逻辑重写 ---
-
       fs.mkdirSync(iconOutputDir, { recursive: true });
 
       const files = glob.sync(`${docsDir}/**/*.md`);
-      // 2. 更强大的正则表达式，可以捕获多行属性
       const cardRegex = /<NavCard([\s\S]*?)>/g;
       const propRegex = /(\w+)="([^"]+)"/g;
 
@@ -57,14 +52,12 @@ export function faviconPlugin(options = {}) {
 
       console.log(`[Favicon Plugin] Found ${cardInstances.length} NavCard instances.`);
 
-      // 用于缓存域名->图标的映射，避免重复下载
       const domainIconCache = {};
       finalHashMap = {};
 
       const tasks = cardInstances.map(async (props) => {
         const { link, title, description = '' } = props;
         
-        // 3. 计算唯一的哈希 ID
         const hashId = simpleHash(title + description);
         
         if (!link.startsWith('http')) return;
@@ -72,7 +65,6 @@ export function faviconPlugin(options = {}) {
         try {
           const hostname = new URL(link).hostname;
 
-          // 4. 检查缓存，如果该域名的图标已处理，则直接使用
           if (domainIconCache[hostname]) {
             finalHashMap[hashId] = domainIconCache[hostname];
             return;
@@ -85,18 +77,16 @@ export function faviconPlugin(options = {}) {
           const buffer = await response.arrayBuffer();
           if (buffer.byteLength < 500) {
             console.warn(`[Favicon Plugin] Skipping invalid favicon for ${hostname}`);
-            // 即使无效，也标记为已处理，避免重复请求
             domainIconCache[hostname] = null;
             return;
           }
           
-          const publicPath = `/nav-card-favicons/${hostname}.png`;
+          const publicPath = `/temp/nav-card-favicons/${hostname}.png`;
           const iconPath = path.join(iconOutputDir, `${hostname}.png`);
           fs.writeFileSync(iconPath, Buffer.from(buffer));
           
           console.log(`[Favicon Plugin] Fetched favicon for ${hostname}`);
           
-          // 5. 填充两个缓存/映射
           domainIconCache[hostname] = publicPath;
           finalHashMap[hashId] = publicPath;
 
