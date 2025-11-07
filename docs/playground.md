@@ -165,6 +165,20 @@ AI 相关：
     colorDark="#e3796a"
   />
   <NavCard
+    title="TypeScript 官方文档与教程"
+    description="教程既有面向编程初学者的，也有面向 JS 程序员的"
+    link="https://www.typescriptlang.org/zh/docs/"
+    colorLight="#3178c6"
+    colorDark="#719af4"
+  />
+  <NavCard
+    title="TypeScript 演练场"
+    description="提供编写和运行 TypeScript 的功能"
+    link="https://www.typescriptlang.org/zh/play/"
+    colorLight="#3178c6"
+    colorDark="#719af4"
+  />
+  <NavCard
     title="MDN Web Docs"
     description="Web 开发的教程与文档"
     link="https://developer.mozilla.org/zh-CN/"
@@ -184,6 +198,13 @@ AI 相关：
     link="https://go.dev/play/"
     colorLight="#007f9f"
     colorDark="#50b7e0"
+  />
+  <NavCard
+    title="Zig 官方学习资源"
+    description="汇集了从对 Zig 一无所知到理解其哲学的各类学习资源"
+    link="https://ziglang.org/zh-CN/learn/"
+    colorLight="#f7a41d"
+    colorDark="#fcdba5"
   />
   <NavCard
     title="ISO C++"
