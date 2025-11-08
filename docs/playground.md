@@ -291,6 +291,20 @@ AI 相关：
     colorDark="#6ea8fe"
   />
   <NavCard
+    title="中科大开源软件镜像站"
+    description="汇集各开源软件镜像服务，附配置教程"
+    link="https://mirrors.ustc.edu.cn/"
+    colorLight="#07A878"
+    colorDark="#07A878"
+  />
+  <NavCard
+    title="Linux 101 在线讲义"
+    description="面向 Linux 零基础读者，深入浅出 Linux 实用知识"
+    link="https://101.lug.ustc.edu.cn/"
+    colorLight="#2094f3"
+    colorDark="#42a5f5"
+  />
+  <NavCard
     title="Hello 算法"
     description="多种编程语言的数据结构与算法教程，图解清晰"
     link="https://www.hello-algo.com/"
@@ -304,7 +318,25 @@ AI 相关：
     colorLight="#005fb8"
     colorDark="#4daafc"
   />
+  <NavCard
+    title="Neovim"
+    description="让你的双手不再离开键盘的 IDE"
+    link="https://neovim.io/"
+    colorLight="#5fb950"
+    colorDark="#61ff00"
+  />
+</NavCardGrid>
 
+其他工具：
+
+<NavCardGrid :columns="5">
+<NavCard
+    title="SVGOMG"
+    description="规范化 SVG 格式文件"
+    link="https://svgomg.net/"
+    colorLight="#0097a7"
+    colorDark="#00bcd4"
+  />
 </NavCardGrid>
 
 ## Markdown 编辑器
