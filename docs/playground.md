@@ -117,6 +117,13 @@ AI 相关：
     colorDark="#a4b9e8"
   />
   <NavCard
+    title="Kimi"
+    description="访问 Kimi（有限额）"
+    link="https://www.kimi.com/"
+    colorLight="#161717"
+    colorDark="#b8bfc6"
+  />
+  <NavCard
     title="prompts.chat"
     description="收录了一些常用提示词，让 AI 对话更高效"
     link="https://prompts.chat/"
