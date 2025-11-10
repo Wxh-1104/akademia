@@ -284,6 +284,20 @@ AI 相关：
     colorDark="#f0eeec"
   />
   <NavCard
+    title="你缺计课"
+    description="每个大学生都应该知道的计算机知识"
+    link="https://www.criwits.top/missing/"
+    colorLight="#0074d9"
+    colorDark="#b5daf9"
+  />
+  <NavCard
+    title="计算机教育中缺失的一课"
+    description="大学课程不一定讲，但对计科专业学习很重要的知识"
+    link="https://missing-semester-cn.github.io/"
+    colorLight="#54008c"
+    colorDark="#cda0eb"
+  />
+  <NavCard
     title="CS自学指南"
     description="大学计算机科学领域自学路线"
     link="https://csdiy.wiki/"
