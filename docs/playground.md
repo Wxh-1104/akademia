@@ -82,7 +82,7 @@ Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
   <NavCard
     title="web.dev"
     description="由 Chrome 团队撰写的关于 Web 开发的系列课程资源与播客"
-    link="https://developer.mozilla.org/zh-CN/"
+    link="https://web.dev/?hl=zh-cn"
     colorLight="#1a73e8"
     colorDark="#e8f0fe"
   />
@@ -95,7 +95,7 @@ Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
   />
 </NavCardGrid>
 
-AI 相关：
+AI、机器学习与深度学习相关：
 
 <NavCardGrid :columns="5">
   <NavCard
@@ -341,7 +341,7 @@ Rust 编程语言相关：
   />
 </NavCardGrid>
 
-其他编程语言：
+Zig 编程语言相关：
 
 <NavCardGrid :columns="5">
   <NavCard
@@ -350,6 +350,32 @@ Rust 编程语言相关：
     link="https://ziglang.org/zh-CN/learn/"
     colorLight="#f7a41d"
     colorDark="#fcdba5"
+  />
+</NavCardGrid>
+
+LaTeX 相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="lshort-zh-cn"
+    description="从零基础入门到进阶，遍览 LaTeX 2ε 的必备中文文档"
+    link="https://mirrors.ctan.org/"
+    colorLight="#000080"
+    colorDark="#eeeeee"
+  />
+  <NavCard
+    title="CTAN 镜像站"
+    description="关于 LaTeX 的几乎一切资源"
+    link="https://mirrors.ctan.org/"
+    colorLight="#000080"
+    colorDark="#eeeeee"
+  />
+  <NavCard
+    title="Overleaf"
+    description="在线编译 LaTeX 文档"
+    link="https://cn.overleaf.com/"
+    colorLight="#098842"
+    colorDark="#86caa5"
   />
 </NavCardGrid>
 
@@ -393,32 +419,6 @@ Rust 编程语言相关：
     link="https://ctf-wiki.org/"
     colorLight=""
     colorDark=""
-  />
-</NavCardGrid>
-
-LaTeX 相关：
-
-<NavCardGrid :columns="5">
-  <NavCard
-    title="lshort-zh-cn"
-    description="从零基础入门到进阶，遍览 LaTeX 2ε 的必备中文文档"
-    link="https://mirrors.ctan.org/"
-    colorLight="#000080"
-    colorDark="#eeeeee"
-  />
-  <NavCard
-    title="CTAN 镜像站"
-    description="关于 LaTeX 的几乎一切资源"
-    link="https://mirrors.ctan.org/"
-    colorLight="#000080"
-    colorDark="#eeeeee"
-  />
-  <NavCard
-    title="Overleaf"
-    description="在线编译 LaTeX 文档"
-    link="https://cn.overleaf.com/"
-    colorLight="#098842"
-    colorDark="#86caa5"
   />
 </NavCardGrid>
 
