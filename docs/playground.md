@@ -35,20 +35,6 @@ license: CC-BY-NC-SA-4.0
     colorDark="#00bdd6"
   />
   <NavCard
-    title="MDN Web Docs"
-    description="涵盖 Web 开发者经常参考的教程与文档"
-    link="https://developer.mozilla.org/zh-CN/"
-    colorLight="#044c9f"
-    colorDark="#a4cefe"
-  />
-  <NavCard
-    title="W3school"
-    description="Web 技术教程与文档，以及测试工具"
-    link="https://www.w3school.com.cn/"
-    colorLight="#900b09"
-    colorDark="#fdfcf8"
-  />
-  <NavCard
     title="DevDocs"
     description="将海量 API 技术文档集结一处，方便查阅"
     link="https://devdocs.io/"
@@ -71,78 +57,41 @@ license: CC-BY-NC-SA-4.0
   />
 </NavCardGrid>
 
-Rust 语言相关：
+数据结构与算法相关：
 
 <NavCardGrid :columns="5">
   <NavCard
-    title="Rust 程序设计语言"
-    description="社区支持的最新版 Rust 标准教科书"
-    link="https://rust-exercises.com/100-exercises/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
+    title="Hello 算法"
+    description="多种编程语言的数据结构与算法教程，图解清晰"
+    link="https://www.hello-algo.com/"
+    colorLight="#349890"
+    colorDark="#00bda4"
+  />
+</NavCardGrid>
+
+Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="MDN Web Docs"
+    description="涵盖 Web 开发者经常参考的教程与文档"
+    link="https://developer.mozilla.org/zh-CN/"
+    colorLight="#044c9f"
+    colorDark="#a4cefe"
   />
   <NavCard
-    title="100 Exercises"
-    description="通过 100 道练习从零学习 Rust"
-    link="https://rust-exercises.com/100-exercises/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
+    title="web.dev"
+    description="由 Chrome 团队撰写的关于 Web 开发的系列课程资源与播客"
+    link="https://developer.mozilla.org/zh-CN/"
+    colorLight="#1a73e8"
+    colorDark="#e8f0fe"
   />
   <NavCard
-    title="Comprehensive Rust🦀"
-    description="由 Android 团队开发，每节均配备练习"
-    link="https://google.github.io/comprehensive-rust/zh-CN/index.html"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="Rust Cookbook"
-    description="通过代码实例展示 Rust 生态系统的一角"
-    link="https://play.rust-lang.org/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="Rust 参考手册"
-    description="对教科书的补充，适合有语言基础者"
-    link="https://rust-exercises.com/100-exercises/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="The Rustonomicon"
-    description="对参考手册的补充，适合有语言基础者"
-    link="https://doc.rust-lang.org/nomicon/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="Effective Rust"
-    description="进一步精进 Rust 代码能力"
-    link="https://www.lurklurk.org/effective-rust/title-page.html"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="Rust 宏小册"
-    description="深入理解 Rust 宏，适合有语言基础者"
-    link="https://zjp-cn.github.io/tlborm/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="Rand Book"
-    description="对 Rand 库的详细介绍，适合快速上手"
-    link="https://rust-random.github.io/book/intro.html"
-    colorLight="#eb864c"
-    colorDark="#dea584"
-  />
-  <NavCard
-    title="Rust Playground"
-    description="线上编译运行 Rust 代码的好去处"
-    link="https://play.rust-lang.org/"
-    colorLight="#eb864c"
-    colorDark="#dea584"
+    title="W3school"
+    description="Web 技术教程与文档，以及测试工具"
+    link="https://www.w3school.com.cn/"
+    colorLight="#900b09"
+    colorDark="#fdfcf8"
   />
 </NavCardGrid>
 
@@ -222,7 +171,57 @@ AI 相关：
   
 </NavCardGrid>
 
-其他编程语言：
+C 与 C++ 编程语言相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="ISO C++"
+    description="标准化 C++ 官网，包含教程与资讯"
+    link="https://isocpp.org/"
+    colorLight="#4183c4"
+    colorDark="#679cd0"
+  />
+  <NavCard
+    title="C++ Primer, 5th Edition"
+    description="C++ 经典教材电子版，建议有一定外语阅读能力者使用"
+    link="https://cpp-primer.pages.dev/"
+    colorLight="#3451b2"
+    colorDark="#a8b1ff"
+  />
+  <NavCard
+    title="微软 C++ 语言参考"
+    description="在 Visual Studio 中学习 C++"
+    link="https://learn.microsoft.com/zh-cn/cpp/cpp/"
+    colorLight="#5c2d91"
+    colorDark="#e0b7fe"
+  />
+</NavCardGrid>
+
+Python 编程语言相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="Python 官方中文文档与教程"
+    description="全面的原生 Python 参考资源"
+    link="https://docs.python.org/zh-cn/"
+    colorLight="#0072aa"
+    colorDark="#7af"
+  />
+</NavCardGrid>
+
+Java 编程语言相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="Java 官方教程"
+    description="Oracle 推出的 Java 教程，建议有一定外语阅读能力者使用"
+    link="https://dev.java/learn/"
+    colorLight="#aa2e00"
+    colorDark="#e76f00"
+  />
+</NavCardGrid>
+
+JavaScript 与 TypeScript 编程语言相关：
 
 <NavCardGrid :columns="5">
   <NavCard
@@ -246,6 +245,11 @@ AI 相关：
     colorLight="#3178c6"
     colorDark="#719af4"
   />
+</NavCardGrid>
+
+Go 编程语言相关：
+
+<NavCardGrid :columns="5">
   <NavCard
     title="Go 官方教程"
     description="Go 语言从零基础到进阶"
@@ -260,6 +264,86 @@ AI 相关：
     colorLight="#007f9f"
     colorDark="#50b7e0"
   />
+</NavCardGrid>
+
+Rust 编程语言相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="Rust 程序设计语言"
+    description="社区支持的最新版 Rust 标准教科书"
+    link="https://rust-exercises.com/100-exercises/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="100 Exercises"
+    description="通过 100 道练习从零学习 Rust"
+    link="https://rust-exercises.com/100-exercises/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Comprehensive Rust🦀"
+    description="由 Android 团队开发，每节均配备练习"
+    link="https://google.github.io/comprehensive-rust/zh-CN/index.html"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Rust Cookbook"
+    description="通过代码实例展示 Rust 生态系统的一角"
+    link="https://play.rust-lang.org/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Rust 参考手册"
+    description="对教科书的补充，适合有语言基础者"
+    link="https://rust-exercises.com/100-exercises/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="The Rustonomicon"
+    description="对参考手册的补充，适合有语言基础者"
+    link="https://doc.rust-lang.org/nomicon/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Effective Rust"
+    description="进一步精进 Rust 代码能力"
+    link="https://www.lurklurk.org/effective-rust/title-page.html"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Rust 宏小册"
+    description="深入理解 Rust 宏，适合有语言基础者"
+    link="https://zjp-cn.github.io/tlborm/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Rand Book"
+    description="对 Rand 库的详细介绍，适合快速上手"
+    link="https://rust-random.github.io/book/intro.html"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
+    title="Rust Playground"
+    description="线上编译运行 Rust 代码的好去处"
+    link="https://play.rust-lang.org/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+</NavCardGrid>
+
+其他编程语言：
+
+<NavCardGrid :columns="5">
   <NavCard
     title="Zig 官方学习资源"
     description="汇集了从对 Zig 一无所知到理解其哲学的各类学习资源"
@@ -267,41 +351,23 @@ AI 相关：
     colorLight="#f7a41d"
     colorDark="#fcdba5"
   />
-  <NavCard
-    title="ISO C++"
-    description="标准化 C++ 官网，包含教程与资讯"
-    link="https://isocpp.org/"
-    colorLight="#4183c4"
-    colorDark="#679cd0"
+</NavCardGrid>
+
+操作系统和 Linux 相关：
+
+<NavCardGrid :columns="5">
+<NavCard
+    title="Linux 101 在线讲义"
+    description="面向 Linux 零基础读者，深入浅出 Linux 实用知识"
+    link="https://101.lug.ustc.edu.cn/"
+    colorLight="#2094f3"
+    colorDark="#42a5f5"
   />
-  <NavCard
-    title="C++ Primer, 5th Edition"
-    description="C++ 经典教材电子版，建议有一定外语阅读能力者使用"
-    link="https://cpp-primer.pages.dev/"
-    colorLight="#3451b2"
-    colorDark="#a8b1ff"
-  />
-  <NavCard
-    title="微软 C++ 语言参考"
-    description="在 Visual Studio 中学习 C++"
-    link="https://learn.microsoft.com/zh-cn/cpp/cpp/"
-    colorLight="#5c2d91"
-    colorDark="#e0b7fe"
-  />
-  <NavCard
-    title="Python 官方中文文档与教程"
-    description="全面的原生 Python 参考资源"
-    link="https://docs.python.org/zh-cn/"
-    colorLight="#0072aa"
-    colorDark="#7af"
-  />
-  <NavCard
-    title="Java 官方教程"
-    description="Oracle 推出的 Java 教程，建议有一定外语阅读能力者使用"
-    link="https://dev.java/learn/"
-    colorLight="#aa2e00"
-    colorDark="#e76f00"
-  />
+</NavCardGrid>
+
+计算机图形学相关：
+
+<NavCardGrid :columns="5">
   <NavCard
     title="GAMES101"
     description="计算机图形学入门级强推课程"
@@ -315,20 +381,6 @@ AI 相关：
     link="https://raytracing.github.io/"
     colorLight="#6e6e6e"
     colorDark="#f0eeec"
-  />
-  <NavCard
-    title="Linux 101 在线讲义"
-    description="面向 Linux 零基础读者，深入浅出 Linux 实用知识"
-    link="https://101.lug.ustc.edu.cn/"
-    colorLight="#2094f3"
-    colorDark="#42a5f5"
-  />
-  <NavCard
-    title="Hello 算法"
-    description="多种编程语言的数据结构与算法教程，图解清晰"
-    link="https://www.hello-algo.com/"
-    colorLight="#349890"
-    colorDark="#00bda4"
   />
 </NavCardGrid>
 
