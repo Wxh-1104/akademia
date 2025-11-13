@@ -67,6 +67,13 @@ license: CC-BY-NC-SA-4.0
     colorLight="#349890"
     colorDark="#00bda4"
   />
+  <NavCard
+    title="力扣 LeetCode"
+    description="数据结构与算法的刷题平台，也有付费学习资源"
+    link="https://leetcode.cn/"
+    colorLight="#ffa116"
+    colorDark="#ffa116"
+  />
 </NavCardGrid>
 
 Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
@@ -452,6 +459,13 @@ LaTeX 相关：
     link="https://mirrors.ustc.edu.cn/"
     colorLight="#07A878"
     colorDark="#07A878"
+  />
+  <NavCard
+    title="计算机领域经典技术书籍"
+    description="汇集了计算机领域经典技术书籍的 PDF 文件"
+    link="https://awesome-programming-books.github.io/"
+    colorLight="#b5e853"
+    colorDark="#b5e853"
   />
   <NavCard
     title="SVGOMG"
