@@ -10,6 +10,67 @@ license: CC-BY-NC-SA-4.0
 
 ## 导航卡片
 
+内容覆盖广泛、非特定主题的帮助性文档：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="你缺计课"
+    description="每个大学生都应该知道的计算机知识"
+    link="https://www.criwits.top/missing/"
+    colorLight="#0074d9"
+    colorDark="#b5daf9"
+  />
+  <NavCard
+    title="计算机教育中缺失的一课"
+    description="大学课程不一定讲，但对计科专业学习很重要的知识"
+    link="https://missing-semester-cn.github.io/"
+    colorLight="#54008c"
+    colorDark="#cda0eb"
+  />
+  <NavCard
+    title="CS自学指南"
+    description="大学计算机科学领域自学路线"
+    link="https://csdiy.wiki/"
+    colorLight="#0097a8"
+    colorDark="#00bdd6"
+  />
+  <NavCard
+    title="MDN Web Docs"
+    description="涵盖 Web 开发者经常参考的教程与文档"
+    link="https://developer.mozilla.org/zh-CN/"
+    colorLight="#044c9f"
+    colorDark="#a4cefe"
+  />
+  <NavCard
+    title="W3school"
+    description="Web 技术教程与文档，以及测试工具"
+    link="https://www.w3school.com.cn/"
+    colorLight="#900b09"
+    colorDark="#fdfcf8"
+  />
+  <NavCard
+    title="DevDocs"
+    description="将海量 API 技术文档集结一处，方便查阅"
+    link="https://devdocs.io/"
+    colorLight="#3377c0"
+    colorDark="#f3f3f3"
+  />
+  <NavCard
+    title="OI Wiki"
+    description="编程竞赛相关知识的整合站点，包含基础知识、工具教程和专题内容等"
+    link="https://oi-wiki.org/"
+    colorLight=""
+    colorDark=""
+  />
+  <NavCard
+    title="菜鸟教程"
+    description="包含不同计算机领域的入门教程"
+    link="https://www.runoob.com/"
+    colorLight="#64854c"
+    colorDark="#96b97d"
+  />
+</NavCardGrid>
+
 Rust 语言相关：
 
 <NavCardGrid :columns="5">
@@ -269,20 +330,6 @@ AI 相关：
     colorLight="#349890"
     colorDark="#00bda4"
   />
-  <NavCard
-    title="Web 版 VS Code"
-    description="在此处远程连接你的 VS Code"
-    link="https://vscode.dev/?vscode-lang=zh-cn"
-    colorLight="#005fb8"
-    colorDark="#4daafc"
-  />
-  <NavCard
-    title="Neovim"
-    description="让你的双手不再离开键盘的 IDE"
-    link="https://neovim.io/"
-    colorLight="#5fb950"
-    colorDark="#61ff00"
-  />
 </NavCardGrid>
 
 计算机安全相关：
@@ -297,70 +344,23 @@ AI 相关：
   />
 </NavCardGrid>
 
-内容覆盖广泛、非特定主题的帮助性文档：
-
-<NavCardGrid :columns="5">
-  <NavCard
-    title="你缺计课"
-    description="每个大学生都应该知道的计算机知识"
-    link="https://www.criwits.top/missing/"
-    colorLight="#0074d9"
-    colorDark="#b5daf9"
-  />
-  <NavCard
-    title="计算机教育中缺失的一课"
-    description="大学课程不一定讲，但对计科专业学习很重要的知识"
-    link="https://missing-semester-cn.github.io/"
-    colorLight="#54008c"
-    colorDark="#cda0eb"
-  />
-  <NavCard
-    title="CS自学指南"
-    description="大学计算机科学领域自学路线"
-    link="https://csdiy.wiki/"
-    colorLight="#0097a8"
-    colorDark="#00bdd6"
-  />
-  <NavCard
-    title="MDN Web Docs"
-    description="涵盖 Web 开发者经常参考的教程与文档"
-    link="https://developer.mozilla.org/zh-CN/"
-    colorLight="#044c9f"
-    colorDark="#a4cefe"
-  />
-  <NavCard
-    title="W3school"
-    description="Web 技术教程与文档，以及测试工具"
-    link="https://www.w3school.com.cn/"
-    colorLight="#900b09"
-    colorDark="#fdfcf8"
-  />
-  <NavCard
-    title="DevDocs"
-    description="将海量 API 技术文档集结一处，方便查阅"
-    link="https://devdocs.io/"
-    colorLight="#3377c0"
-    colorDark="#f3f3f3"
-  />
-  <NavCard
-    title="OI Wiki"
-    description="编程竞赛相关知识的整合站点，包含基础知识、工具教程和专题内容等"
-    link="https://oi-wiki.org/"
-    colorLight=""
-    colorDark=""
-  />
-  <NavCard
-    title="菜鸟教程"
-    description="包含不同计算机领域的入门教程"
-    link="https://www.runoob.com/"
-    colorLight="#64854c"
-    colorDark="#96b97d"
-  />
-</NavCardGrid>
-
 LaTeX 相关：
 
 <NavCardGrid :columns="5">
+  <NavCard
+    title="lshort-zh-cn"
+    description="从零基础入门到进阶，遍览 LaTeX 2ε 的必备中文文档"
+    link="https://mirrors.ctan.org/"
+    colorLight="#000080"
+    colorDark="#eeeeee"
+  />
+  <NavCard
+    title="CTAN 镜像站"
+    description="关于 LaTeX 的几乎一切资源"
+    link="https://mirrors.ctan.org/"
+    colorLight="#000080"
+    colorDark="#eeeeee"
+  />
   <NavCard
     title="Overleaf"
     description="在线编译 LaTeX 文档"
@@ -370,9 +370,23 @@ LaTeX 相关：
   />
 </NavCardGrid>
 
-在线工具类网站：
+工具类网站：
 
 <NavCardGrid :columns="5">
+  <NavCard
+    title="Web 版 VS Code"
+    description="在此处远程连接你的 VS Code"
+    link="https://vscode.dev/?vscode-lang=zh-cn"
+    colorLight="#005fb8"
+    colorDark="#4daafc"
+  />
+  <NavCard
+    title="Neovim"
+    description="让你的双手不再离开键盘的 IDE"
+    link="https://neovim.io/"
+    colorLight="#5fb950"
+    colorDark="#61ff00"
+  />
   <NavCard
     title="清华大学开源软件镜像站"
     description="汇集各开源软件镜像服务，附配置教程"
