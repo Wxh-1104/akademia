@@ -285,6 +285,18 @@ AI 相关：
   />
 </NavCardGrid>
 
+计算机安全相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="CTF Wiki"
+    description="针对 CTF 竞赛提供相关知识讲解，也逐步延伸至计算机安全领域的其他内容"
+    link="https://ctf-wiki.org/"
+    colorLight=""
+    colorDark=""
+  />
+</NavCardGrid>
+
 内容覆盖广泛、非特定主题的帮助性文档：
 
 <NavCardGrid :columns="5">
