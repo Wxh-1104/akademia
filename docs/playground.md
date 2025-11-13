@@ -186,13 +186,6 @@ AI 相关：
     colorDark="#719af4"
   />
   <NavCard
-    title="MDN Web Docs"
-    description="Web 开发的教程与文档"
-    link="https://developer.mozilla.org/zh-CN/"
-    colorLight="#044c9f"
-    colorDark="#a4cefe"
-  />
-  <NavCard
     title="Go 官方教程"
     description="Go 语言从零基础到进阶"
     link="https://go.dev/learn/"
@@ -249,27 +242,6 @@ AI 相关：
     colorDark="#e76f00"
   />
   <NavCard
-    title="DevDocs"
-    description="将海量 API 技术文档集结一处，方便查阅"
-    link="https://devdocs.io/"
-    colorLight="#3377c0"
-    colorDark="#f3f3f3"
-  />
-  <NavCard
-    title="菜鸟教程"
-    description="包含不同计算机领域的入门教程"
-    link="https://www.runoob.com/"
-    colorLight="#64854c"
-    colorDark="#96b97d"
-  />
-  <NavCard
-    title="Programming Fonts"
-    description="集合了大部分等宽字体，便于对比显示效果"
-    link="https://www.programmingfonts.org/"
-    colorLight="rgb(255, 106, 0)"
-    colorDark="rgb(255, 106, 0)"
-  />
-  <NavCard
     title="GAMES101"
     description="计算机图形学入门级强推课程"
     link="https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html"
@@ -282,41 +254,6 @@ AI 相关：
     link="https://raytracing.github.io/"
     colorLight="#6e6e6e"
     colorDark="#f0eeec"
-  />
-  <NavCard
-    title="你缺计课"
-    description="每个大学生都应该知道的计算机知识"
-    link="https://www.criwits.top/missing/"
-    colorLight="#0074d9"
-    colorDark="#b5daf9"
-  />
-  <NavCard
-    title="计算机教育中缺失的一课"
-    description="大学课程不一定讲，但对计科专业学习很重要的知识"
-    link="https://missing-semester-cn.github.io/"
-    colorLight="#54008c"
-    colorDark="#cda0eb"
-  />
-  <NavCard
-    title="CS自学指南"
-    description="大学计算机科学领域自学路线"
-    link="https://csdiy.wiki/"
-    colorLight="#0097a8"
-    colorDark="#00bdd6"
-  />
-  <NavCard
-    title="清华大学开源软件镜像站"
-    description="汇集各开源软件镜像服务，附配置教程"
-    link="https://mirrors.tuna.tsinghua.edu.cn/"
-    colorLight="#0d6efd"
-    colorDark="#6ea8fe"
-  />
-  <NavCard
-    title="中科大开源软件镜像站"
-    description="汇集各开源软件镜像服务，附配置教程"
-    link="https://mirrors.ustc.edu.cn/"
-    colorLight="#07A878"
-    colorDark="#07A878"
   />
   <NavCard
     title="Linux 101 在线讲义"
@@ -348,15 +285,109 @@ AI 相关：
   />
 </NavCardGrid>
 
-其他工具：
+内容覆盖广泛、非特定主题的帮助性文档：
 
 <NavCardGrid :columns="5">
-<NavCard
+  <NavCard
+    title="你缺计课"
+    description="每个大学生都应该知道的计算机知识"
+    link="https://www.criwits.top/missing/"
+    colorLight="#0074d9"
+    colorDark="#b5daf9"
+  />
+  <NavCard
+    title="计算机教育中缺失的一课"
+    description="大学课程不一定讲，但对计科专业学习很重要的知识"
+    link="https://missing-semester-cn.github.io/"
+    colorLight="#54008c"
+    colorDark="#cda0eb"
+  />
+  <NavCard
+    title="CS自学指南"
+    description="大学计算机科学领域自学路线"
+    link="https://csdiy.wiki/"
+    colorLight="#0097a8"
+    colorDark="#00bdd6"
+  />
+  <NavCard
+    title="MDN Web Docs"
+    description="涵盖 Web 开发者经常参考的教程与文档"
+    link="https://developer.mozilla.org/zh-CN/"
+    colorLight="#044c9f"
+    colorDark="#a4cefe"
+  />
+  <NavCard
+    title="W3school"
+    description="Web 技术教程与文档，以及测试工具"
+    link="https://www.w3school.com.cn/"
+    colorLight="#900b09"
+    colorDark="#fdfcf8"
+  />
+  <NavCard
+    title="DevDocs"
+    description="将海量 API 技术文档集结一处，方便查阅"
+    link="https://devdocs.io/"
+    colorLight="#3377c0"
+    colorDark="#f3f3f3"
+  />
+  <NavCard
+    title="OI Wiki"
+    description="编程竞赛相关知识的整合站点，包含基础知识、工具教程和专题内容等"
+    link="https://oi-wiki.org/"
+    colorLight=""
+    colorDark=""
+  />
+  <NavCard
+    title="菜鸟教程"
+    description="包含不同计算机领域的入门教程"
+    link="https://www.runoob.com/"
+    colorLight="#64854c"
+    colorDark="#96b97d"
+  />
+</NavCardGrid>
+
+LaTeX 相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="Overleaf"
+    description="在线编译 LaTeX 文档"
+    link="https://cn.overleaf.com/"
+    colorLight="#098842"
+    colorDark="#86caa5"
+  />
+</NavCardGrid>
+
+在线工具类网站：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="清华大学开源软件镜像站"
+    description="汇集各开源软件镜像服务，附配置教程"
+    link="https://mirrors.tuna.tsinghua.edu.cn/"
+    colorLight="#0d6efd"
+    colorDark="#6ea8fe"
+  />
+  <NavCard
+    title="中科大开源软件镜像站"
+    description="汇集各开源软件镜像服务，附配置教程"
+    link="https://mirrors.ustc.edu.cn/"
+    colorLight="#07A878"
+    colorDark="#07A878"
+  />
+  <NavCard
     title="SVGOMG"
     description="规范化 SVG 格式文件"
     link="https://svgomg.net/"
     colorLight="#0097a7"
     colorDark="#00bcd4"
+  />
+  <NavCard
+    title="Programming Fonts"
+    description="集合了大部分等宽字体，便于对比显示效果"
+    link="https://www.programmingfonts.org/"
+    colorLight="rgb(255, 106, 0)"
+    colorDark="rgb(255, 106, 0)"
   />
 </NavCardGrid>
 
