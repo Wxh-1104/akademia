@@ -340,6 +340,13 @@ Rust 编程语言相关：
     colorDark="#dea584"
   />
   <NavCard
+    title="Rust and WebAssembly"
+    description="Rust 与 WebAssembly 交互的操作指南（停止维护）"
+    link="hhttps://rustwasm.github.io/docs/book/"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
     title="Rust Playground"
     description="线上编译运行 Rust 代码的好去处"
     link="https://play.rust-lang.org/"
