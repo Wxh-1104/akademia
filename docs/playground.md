@@ -278,8 +278,8 @@ Rust 编程语言相关：
 <NavCardGrid :columns="5">
   <NavCard
     title="Rust 程序设计语言"
-    description="社区支持的最新版 Rust 标准教科书"
-    link="https://rust-exercises.com/100-exercises/"
+    description="社区支持的最新版 Rust 标准教科书（非官方翻译）"
+    link="https://kaisery.github.io/trpl-zh-cn/"
     colorLight="#eb864c"
     colorDark="#dea584"
   />
@@ -300,14 +300,14 @@ Rust 编程语言相关：
   <NavCard
     title="Rust Cookbook"
     description="通过代码实例展示 Rust 生态系统的一角"
-    link="https://play.rust-lang.org/"
+    link="https://rustwiki.org/zh-CN/rust-cookbook/"
     colorLight="#eb864c"
     colorDark="#dea584"
   />
   <NavCard
     title="Rust 参考手册"
     description="对教科书的补充，适合有语言基础者"
-    link="https://rust-exercises.com/100-exercises/"
+    link="https://doc.rust-lang.org/reference/"
     colorLight="#eb864c"
     colorDark="#dea584"
   />
@@ -342,7 +342,7 @@ Rust 编程语言相关：
   <NavCard
     title="Rust and WebAssembly"
     description="Rust 与 WebAssembly 交互的操作指南（停止维护）"
-    link="hhttps://rustwasm.github.io/docs/book/"
+    link="https://rustwasm.github.io/docs/book/"
     colorLight="#eb864c"
     colorDark="#dea584"
   />
