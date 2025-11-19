@@ -214,6 +214,13 @@ Python 编程语言相关：
     colorLight="#0072aa"
     colorDark="#7af"
   />
+  <NavCard
+    title="Google Colab"
+    description="在浏览器中编写和执行 Python 代码（免费使用 GPU）"
+    link="https://colab.research.google.com/"
+    colorLight="#e8710a"
+    colorDark="#f9ab00"
+  />
 </NavCardGrid>
 
 Java 编程语言相关：
@@ -405,6 +412,18 @@ LaTeX 相关：
   />
 </NavCardGrid>
 
+计算机网络相关：
+
+<NavCardGrid :columns="5">
+<NavCard
+    title="RFC 1180"
+    description="经典的 TCP/IP 协议栈教程"
+    link="https://www.rfc-editor.org/rfc/rfc1180.html"
+    colorLight="#2C4353"
+    colorDark="#E3E3E3"
+  />
+</NavCardGrid>
+
 计算机图形学相关：
 
 <NavCardGrid :columns="5">
@@ -436,7 +455,7 @@ LaTeX 相关：
   />
 </NavCardGrid>
 
-工具类网站：
+工具向网站：
 
 <NavCardGrid :columns="5">
   <NavCard
