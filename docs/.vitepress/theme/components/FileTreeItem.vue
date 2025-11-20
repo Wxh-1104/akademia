@@ -87,26 +87,33 @@ const toggleFolder = () => {
   }
 };
 
-const downloadFile = () => {
+const downloadFile = async () => {
   if (props.item.type === "file") {
     const filePath = props.item.path || `${props.basePath}${props.item.name}`;
 
-    // 对于同源文件，直接使用 window.location 或 window.open
-    // 这在 Cloudflare Pages 等静态托管上更可靠
     try {
-      // 创建隐藏的 iframe 来触发下载
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = filePath;
-      document.body.appendChild(iframe);
+      // 使用 fetch + blob 方式，在静态托管上最可靠
+      const response = await fetch(filePath);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      // 3秒后移除 iframe
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = props.item.name;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+
+      // 清理
       setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 3000);
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
-      // 如果 iframe 方式失败，降级到 window.open
-      console.warn("iframe 下载失败，使用 window.open:", error);
+      // 降级方案：在新标签页打开
+      console.warn("下载失败，在新窗口打开:", error);
       window.open(filePath, "_blank");
     }
   }
