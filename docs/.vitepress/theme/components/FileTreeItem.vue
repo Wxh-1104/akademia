@@ -90,16 +90,29 @@ const toggleFolder = () => {
 const downloadFile = () => {
   if (props.item.type === "file") {
     const filePath = props.item.path || `${props.basePath}${props.item.name}`;
-    const link = document.createElement("a");
-    link.href = filePath;
-    link.download = props.item.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    // 对于同源文件，直接使用 window.location 或 window.open
+    // 这在 Cloudflare Pages 等静态托管上更可靠
+    try {
+      // 创建隐藏的 iframe 来触发下载
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = filePath;
+      document.body.appendChild(iframe);
+
+      // 3秒后移除 iframe
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 3000);
+    } catch (error) {
+      // 如果 iframe 方式失败，降级到 window.open
+      console.warn("iframe 下载失败，使用 window.open:", error);
+      window.open(filePath, "_blank");
+    }
   }
 };
 
-// 自动获取文件大小
+// 如果配置中没有提供 size，尝试获取（但构建时应该已经生成了）
 const fetchFileSize = async () => {
   if (props.item.type === "file" && !fileSize.value) {
     try {
@@ -110,14 +123,14 @@ const fetchFileSize = async () => {
         fileSize.value = parseInt(contentLength, 10);
       }
     } catch (error) {
-      // 如果获取失败，保持为 null
-      console.warn(`无法获取文件大小: ${props.item.name}`);
+      console.warn(`文件大小获取失败: ${props.item.name}`, error);
     }
   }
 };
 
 onMounted(() => {
-  if (props.item.type === "file") {
+  // 只有在没有 size 时才尝试获取（通常不应该发生）
+  if (props.item.type === "file" && !fileSize.value) {
     fetchFileSize();
   }
 });

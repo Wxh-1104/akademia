@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { faviconPlugin } from '../.vitepress/theme/plugins/navCardFavicon.mjs';
+import { fileStructurePlugin } from '../.vitepress/theme/plugins/fileStructureGenerator.mjs';
 
 import timeline from "vitepress-markdown-timeline";
 import markdownItFootnote from 'markdown-it-footnote';
@@ -10,7 +11,8 @@ export default withMermaid(
   defineConfig({
     vite: {
       plugins: [
-        faviconPlugin()
+        faviconPlugin(),
+        fileStructurePlugin()
       ]
     },
 

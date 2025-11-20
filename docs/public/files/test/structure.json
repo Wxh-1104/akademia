@@ -1,23 +1,20 @@
 [
   {
-    "name": "这是一个文件夹",
+    "name": "another_folder",
     "type": "folder",
     "children": [
       {
-        "name": "另一个 markdown 文件",
+        "name": "another.md",
         "type": "file",
-        "path": "/files/test/another_folder/another.md"
+        "path": "/files/test/another_folder/another.md",
+        "size": 46
       }
     ]
   },
   {
-    "name": "这是一个 markdown 文件",
+    "name": "test.md",
     "type": "file",
-    "path": "/files/test/test.md"
-  },
-  {
-    "name": "这是一个空文件夹",
-    "type": "folder",
-    "children": []
+    "path": "/files/test/test.md",
+    "size": 94
   }
 ]
