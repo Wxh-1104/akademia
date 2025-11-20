@@ -290,6 +290,7 @@ sequenceDiagram
 ### 文档中显示时间轴
 
 使用插件提供的 `timeline` 在文档中显示时间轴，用以表示一系列步骤或以时间先后为序的事件。例如
+
 ```markdown
 ::: timeline 2020-04-30
 VitePress 0.1.0 版本发布。
@@ -300,8 +301,6 @@ VitePress 1.0.0 版本发布：
 - Features:
   - **theme:** allow selectively disabling external link icon on navbar items
 :::
-
-::: timeline
 ```
 会显示为
 
@@ -315,4 +314,86 @@ VitePress 1.0.0 版本发布：
   - **theme:** allow selectively disabling external link icon on navbar items
 :::
 
-::: timeline
+### 文档中提供文件浏览器
+
+本站文档中支持使用 `FileExplorer` 组件来显示文件浏览器。这是一个卡片式文件浏览器插件，可以展示文件的层级结构，并支持直接下载文件。
+
+只需要一行代码即可：
+
+```vue
+<FileExplorer configPath="/files/test/structure.json" />
+```
+
+然后在对应目录 `/docs/public/files/test/structure.json` 中定义文件结构：
+
+```json
+[
+  {
+    "name": "这是一个文件夹",
+    "type": "folder",
+    "children": [
+      {
+        "name": "另一个 markdown 文件",
+        "type": "file",
+        "path": "/files/test/another_folder/another.md"
+      }
+    ]
+  },
+  {
+    "name": "这是一个 markdown 文件",
+    "type": "file",
+    "path": "/files/test/test.md"
+  },
+  {
+    "name": "这是一个空文件夹",
+    "type": "folder",
+    "children": []
+  }
+]
+```
+
+显示效果：
+
+<FileExplorer configPath="/files/test/structure.json" />
+
+除了在 `JSON` 文件中定义文件结构，也可以直接传入数据：
+
+```vue
+<FileExplorer :fileStructure="fileStructure" />
+
+<script setup>
+const fileStructure = [
+  {
+    "name": "这是一个文件夹",
+    "type": "folder",
+    "children": [
+      {
+        "name": "另一个 markdown 文件",
+        "type": "file",
+        "path": "/files/test/another_folder/another.md"
+      }
+    ]
+  },
+  {
+    "name": "这是一个 markdown 文件",
+    "type": "file",
+    "path": "/files/test/test.md"
+  },
+  {
+    "name": "这是一个空文件夹",
+    "type": "folder",
+    "children": []
+  }
+]
+</script>
+```
+
+可用的 Props 参数包括：
+
+- `configPath` (可选): JSON 配置文件路径，如 `/files/test/structure.json`
+- `fileStructure` (可选): 直接传入的文件结构数组
+- `basePath` (可选): 文件基础路径，默认为 `/files/`
+
+要注意，`configPath` 和 `fileStructure` 至少需要提供一个。优先使用 `fileStructure`（如果提供）。
+
+对于每一个独立出现的 `FileExplorer` 组件，都应该将其包含的所有文件放入 `/public/files/` 下的同一子文件夹中。

@@ -54,9 +54,11 @@ import CcLicense from './components/ccLicense.vue'
 import navCard from './components/navCard.vue';
 import navCardGrid from './components/navCardGrid.vue';
 
+import FileExplorer from './components/FileExplorer.vue';
+
 export default {
   ...DefaultTheme,
-  
+
   Layout: MyLayout,
 
   enhanceApp({ app }) {
@@ -67,5 +69,6 @@ export default {
     app.component('CcLicense', CcLicense)
     app.component('NavCard', navCard)
     app.component('NavCardGrid', navCardGrid)
+    app.component('FileExplorer', FileExplorer)
   }
 }

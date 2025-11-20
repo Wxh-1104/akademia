@@ -1,0 +1,23 @@
+[
+  {
+    "name": "这是一个文件夹",
+    "type": "folder",
+    "children": [
+      {
+        "name": "另一个 markdown 文件",
+        "type": "file",
+        "path": "/files/test/another_folder/another.md"
+      }
+    ]
+  },
+  {
+    "name": "这是一个 markdown 文件",
+    "type": "file",
+    "path": "/files/test/test.md"
+  },
+  {
+    "name": "这是一个空文件夹",
+    "type": "folder",
+    "children": []
+  }
+]
