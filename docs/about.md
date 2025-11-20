@@ -318,37 +318,9 @@ VitePress 1.0.0 版本发布：
 
 本站文档中支持使用 `FileExplorer` 组件来显示文件浏览器。这是一个卡片式文件浏览器插件，可以展示文件的层级结构，并支持直接下载文件。
 
-#### 快速开始
+该组件在每次构建时自动扫描 `/docs/public/files/` 下的所有子目录并自动生成 `structure.json` 配置文件。这意味着您只需将文件放入 `/docs/public/files/your-category/` 目录，然后运行 `npm run docs:dev` 或 `npm run docs:build` 即可。
 
-只需要一行代码：
-
-```vue
-<FileExplorer configPath="/files/test/structure.json" />
-```
-
-显示效果：
-
-<FileExplorer configPath="/files/test/structure.json" />
-
-#### 自动文件大小检测
-
-**无需手动配置！** 文件大小会在构建时自动检测。
-
-本站使用了 `fileStructureGenerator` VitePress 插件，在每次构建时自动：
-1. 扫描 `/docs/public/files/` 下的所有子目录
-2. 读取每个文件的实际大小
-3. 自动生成 `structure.json` 配置文件
-
-这意味着您只需：
-- ✅ 将文件放入 `/docs/public/files/your-category/` 目录
-- ✅ 运行 `npm run docs:dev` 或 `npm run docs:build`
-- ✅ 配置文件自动生成，文件大小 100% 准确
-
-#### 使用方法
-
-**步骤 1：添加文件**
-
-在 `/docs/public/files/` 下创建子目录并放入文件：
+**步骤 1：添加文件** 在 `/docs/public/files/` 下创建子目录并放入文件：
 
 ```
 docs/public/files/
@@ -359,7 +331,7 @@ docs/public/files/
         └── image.png
 ```
 
-**步骤 2：构建**
+**步骤 2：构建** 运行：
 
 ```bash
 npm run docs:dev
@@ -369,17 +341,16 @@ npm run docs:build
 
 插件会自动生成 `my-docs/structure.json`。
 
-**步骤 3：在页面中使用**
+**步骤 3：在页面中使用** 在 markdown 文件中使用 `FileExplorer` 组件：
 
 ```vue
 <FileExplorer configPath="/files/my-docs/structure.json" />
 ```
 
-#### 自动生成的配置示例
-
 以 `/docs/public/files/test/` 为例：
 
 **文件系统：**
+
 ```
 test/
 ├── test.md
@@ -388,6 +359,7 @@ test/
 ```
 
 **自动生成的 structure.json：**
+
 ```json
 [
   {
@@ -411,9 +383,15 @@ test/
 ]
 ```
 
-文件大小（`size` 字段）完全自动，无需手动填写！
+此时在 markdown 文件中使用 `FileExplorer` 组件：
 
-#### 高级用法
+```vue
+<FileExplorer configPath="/files/test/structure.json" />
+```
+
+展示效果：
+
+<FileExplorer configPath="/files/test/structure.json" />
 
 如果不想使用自动生成，也可以直接传入数据：
 
@@ -438,24 +416,10 @@ const fileStructure = [
 </script>
 ```
 
-#### 可用参数
+可用参数包括：
 
 - `configPath` (可选): JSON 配置文件路径，如 `/files/test/structure.json`
 - `fileStructure` (可选): 直接传入的文件结构数组
 - `basePath` (可选): 文件基础路径，默认为 `/files/`
 
 **注意**：`configPath` 和 `fileStructure` 至少需要提供一个。优先使用 `fileStructure`（如果提供）。
-
-#### 最佳实践
-
-1. **文件组织**：为每个 FileExplorer 实例创建独立的子目录，例如 `/public/files/documents/`、`/public/files/resources/` 等
-2. **自动生成**：推荐使用自动生成方式，确保文件大小始终准确
-3. **版本控制**：将自动生成的 `structure.json` 提交到 Git，这样 Cloudflare Pages 部署时可以直接使用
-4. **文件命名**：文件名会直接作为显示名称，建议使用有意义的中文名称
-
-#### 技术细节
-
-- **自动大小检测**：使用 Node.js `fs.statSync()` 在构建时读取文件实际大小
-- **跨平台一致**：本地开发和 Cloudflare Pages 部署表现完全一致
-- **零运行时开销**：不依赖浏览器端的 HTTP 请求检测文件大小
-- **VitePress 集成**：作为 Vite 插件在构建过程中自动运行
