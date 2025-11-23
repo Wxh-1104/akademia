@@ -132,6 +132,9 @@ export default withMermaid(
             text: "信管专业资料",
             collapsed: false,
             items: [
+              { text: "信息系统开发与管理", link: "/schoolwork/xinguan/development-and-management-of-information-system" },
+              { text: "Web开发技术", link: "/schoolwork/xinguan/web-development-technology" },
+              { text: "先进制造模式", link: "/schoolwork/xinguan/advanced-manufacturing-mode" },
               { text: "工业工程基础", link: "/schoolwork/xinguan/the-foundation-to-industrial-engineering" },
             ]
           }
