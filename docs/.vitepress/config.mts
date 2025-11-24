@@ -10,6 +10,17 @@ import markdownItTaskCheckbox from 'markdown-it-task-checkbox';
 export default withMermaid(
   defineConfig({
     vite: {
+      build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor'
+            }
+          }
+        }
+      }
+    },
       plugins: [
         faviconPlugin(),
         fileStructurePlugin()

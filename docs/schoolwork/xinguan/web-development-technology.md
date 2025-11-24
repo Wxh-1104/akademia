@@ -1920,7 +1920,7 @@ $('.inner').hover(function () {
 
 #### 插入节点
 
-*   **jQuery 提供了多种方法来实现节点的插入，从插入方式 上来看主要分为两大类：内部插入和平行插入**
+*   **jQuery 提供了多种方法来实现节点的插入，从插入方式上来看主要分为两大类：内部插入和平行插入**
 
 **表 5-6 插入节点方法**
 
@@ -1965,7 +1965,7 @@ $('.inner').hover(function () {
 
 *   **remove()删除节点**
 *   **empty()清空节点**
-*   **replaceWith()和replaceAll()替换节点，** 前者的作用是将所有匹配的元素替换成指定的节点，replaceAll()方法的作用相同，只是颠倒了replaceWith()方法 的操作顺序
+*   **replaceWith()和replaceAll()替换节点，** 前者的作用是将所有匹配的元素替换成指定的节点，replaceAll()方法的作用相同，只是颠倒了replaceWith()方法的操作顺序
 
 ```javascript
 $('#btn3').click(function () {
@@ -1986,7 +1986,7 @@ $('#btn6').click(function () {
 
 #### 查找和遍历节点
 
-*   **除了可以使用选择器来查找节点外，还能通过已选择到的元素获取与其相邻的 兄弟节点、父子节点等进行二次操作。此类方法中，常见的有 children()、next()、prev()、 siblings()、parent()、parents()等。**
+*   **除了可以使用选择器来查找节点外，还能通过已选择到的元素获取与其相邻的兄弟节点、父子节点等进行二次操作。此类方法中，常见的有 children()、next()、prev()、 siblings()、parent()、parents()等。**
 
 ```javascript
 var $ul = $('ul')
@@ -2025,7 +2025,7 @@ $('#btn7').click(function () {
 
 #### 属性节点的操作
 
-*   **在 jQuery 中，有两种常 用的操作元素属性的方法，分别为 attr()和removeAttr()方法，前者可以用来获取和设置元素 的属性，后者可以用来删除元素的属性**
+*   **在 jQuery 中，有两种常用的操作元素属性的方法，分别为 attr()和removeAttr()方法，前者可以用来获取和设置元素的属性，后者可以用来删除元素的属性**
 
 ```javascript
 //1. 读取第一个div的title属性
@@ -3031,3 +3031,2725 @@ os.close();
 *   **第一次被访问时，会实例化对象（2次以上不会，线程安全问题？） 后续再理解**
 *   **对象调用service()方法（内部调用，知道就行）**
 *   **service()方法根据请求类型访问doGet()或者doPost()方法做相应处理**
+
+## 第8课 JSP技术
+
+### WEB开发中角色
+
+*   **JSP（Java Server Page）技术在当前Web开发中，主要用于动态显示数据（用户登录为例）**
+    *   能在html页面中嵌入Java代码（`<% java代码 %>`）
+    *   能在html页面中用JSP表达式动态显示数据
+*   **本质上也是Servlet（WHY JSP?）**
+
+```html
+<%@ page import="java.util.Date" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>显示系统时间</title>
+</head>
+<body>
+    <h2>当前访问的时间是： <%= new Date() %></h2>
+</body>
+</html>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器访问hello.jsp页面，显示当前系统时间的运行结果）
+
+### Servlet版本
+
+```java
+@WebServlet(name = "SystemTimeServlet", urlPatterns = "/time")
+public class SystemTimeServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        Date date = new Date();
+        response.setContentType("text/html; charset=UTF-8");
+        PrintWriter writer = response.getWriter();
+        writer.write("<!DOCTYPE html>\r\n");
+        writer.write(" <html lang=\"en\">\r\n");
+        writer.write(" <head>\r\n");
+        writer.write(" <meta charset=\"UTF-8\">\r\n");
+        writer.write(" <title>显示系统时间</title>\r\n");
+        writer.write(" </head>\r\n");
+        writer.write(" <body>\r\n");
+        writer.write(" <h2>当前访问时间是： " + date + "</h2>\r\n");
+        writer.write(" </body>\r\n");
+        writer.write("</html>\r\n");
+        writer.write("\r\n");
+    }
+}
+```
+
+### JSP运行原理
+
+**JSP的运行模式与Servlet一样，都是请求/响应模式，不同的是Servlet需要配置请求路径，而JSP直接对应文件路径，无须配置。**
+
+（此处需结合幻灯片中的图片讲解：展示JSP容器(Tomcat)的处理流程图：①请求 -> JSP文件 -> ②转换 -> Servlet源码文件 -> ③编译 -> Servlet字节码 -> ④执行 -> Servlet实例 -> ⑤生成 -> 响应结果 -> ⑥响应）
+
+### JSP基本原理（了解）
+
+*   JSP页面是动态资源（Tomcat管理）
+*   Servlet映射，JSP如何映射？
+*   查看Tomcat的`web.xml`文件
+*   **浏览器请求JSP页面，其实都需要经过JspServlet的处理**
+
+```xml
+<servlet>
+    <servlet-name>jsp</servlet-name>
+    <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
+    <!-- ... -->
+</servlet>
+<servlet-mapping>
+    <servlet-name>jsp</servlet-name>
+    <url-pattern>*.jsp</url-pattern>
+    <url-pattern>*.jspx</url-pattern>
+</servlet-mapping>
+```
+
+*   **当访问一个jsp页面时， JspServlet会先把jsp翻译成一个Servlet源文件**
+    *   在Tomcat服务器的 `work\Catalina\localhost\项目名\org\apache\jsp` 目录下（一般）
+    *   `C:/Users/登录名/.IntelliJIdea2018.2/system/tomcat/Tomcat-pure_工程名/work/Catalina/localhost/appcontext名称/org/apache/jsp` （IDEA中）
+
+（此处需结合幻灯片中的图片讲解：展示文件资源管理器中生成的 hello_jsp.class 和 hello_jsp.java 文件）
+
+*   **该Servlet继承HttpJspBase类（继承HttpServlet）**
+*   **会先调用父类（ HttpServlet ）中的service()方法，调用_jspService()方法**
+
+```java
+public void _jspService(final javax.servlet.http.HttpServletRequest request, final javax.servlet.http.HttpServletResponse response)
+    throws java.io.IOException, javax.servlet.ServletException {
+    // ...
+    try {
+        response.setContentType("text/html;charset=UTF-8");
+        // ...
+        out.write("\r\n");
+        out.write("\r\n");
+        out.write("<html>\r\n");
+        out.write("<head>\r\n");
+        out.write("    <title>显示系统时间</title>\r\n");
+        out.write("</head>\r\n");
+        out.write("<body>\r\n");
+        out.write("    <h2>当前访问的时间是： ");
+        out.print( new Date());
+        out.write("</h2>\r\n");
+        out.write("</body>\r\n");
+        out.write("</html>\r\n");
+    } catch (java.lang.Throwable t) {
+        // ...
+    }
+}
+```
+
+### JSP基础语法
+
+*   **在 JSP 文件中可以嵌套很多内容，例如 JSP 指令、JSP 表达式、JSP 脚本、JSP 注释、 JSP 内置对象及 JSP 标签等，这些内容的编写都需要遵循一定的语法规范**
+
+### JSP指令简介
+
+*   **指令告诉引擎如何处理JSP页面中的其余部分**
+    *   page指令
+    *   include指令
+    *   taglib指令（后讲）
+*   **JSP指令的基本语法格式：** `<%@ 指令 属性名="值" %>`
+*   **page指令用于定义JSP页面的各种属性**
+    *   `<% @page 属性名=“属性值” %>`
+    *   `<%@ page contentType="text/html;charset=UTF-8" language="java" %>`
+*   **Page指令作用2： 导入Java包**
+    *   `<%@ page import="java.util.Date" %>`
+
+#### 异常处理示例
+
+**page.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page errorPage="error.jsp" %>
+<html>
+<head>
+    <title>发生异常页面</title>
+</head>
+<body>
+    <%
+        int x = 100/ 0;
+    %>
+</body>
+</html>
+```
+
+**error.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>错误处理页面</title>
+</head>
+<body>
+    <h2>抱歉！服务器故障，请稍微访问。</h2>
+</body>
+</html>
+```
+
+（此处需结合幻灯片中的图片讲解：展示发生除零异常后跳转显示的“抱歉！服务器故障...”页面）
+
+#### 全局异常处理
+
+**web.xml:**
+
+```xml
+<error-page>
+    <error-code>404</error-code>
+    <location>/400.jsp</location>
+</error-page>
+```
+
+**400.jsp / 500.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>404错误</title>
+</head>
+<body>
+    <h2>发生404错误处理页面</h2>
+</body>
+</html>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器访问不存在的页面 hoPage.jsp 时显示的“发生404错误处理页面”结果）
+
+### JSP指令简介（2）
+
+*   **include指令**
+    *   include指令用于引入其它JSP页面，如果使用include指令引入了其它JSP页面，那么JSP引擎将把这两个JSP翻译成一个servlet。所以include指令引入通常也称之为静态引入
+    *   **语法：** `<%@ include file="relativeURL"%>`
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>include 指令</title>
+</head>
+<body>
+    我是 include 页面，包含了 hello.jsp 页面
+    <%@include file="hello.jsp"%>
+</body>
+</html>
+```
+
+（此处需结合幻灯片中的图片讲解：展示页面同时显示了文本内容和被包含页面 hello.jsp 中的时间显示）
+
+### JSP基本语法 - 表达式与脚本
+
+#### JSP表达式
+
+*   **JSP脚本表达式（expression）用于将程序数据输出到客户端**
+*   **语法：** `<%= 变量或表达式 %>`
+*   **举例：输出当前系统时间:**
+    *   `<%= new java.util.Date() %>`
+*   **输出登陆的用户名（servlet的例子）**
+    *   `<%= request.getAttribute(“username”)%>`
+
+#### JSP脚本片段
+
+*   **是指嵌套在 `<% %>` 中的 Java 程序代码，这些 Java 代码必须严格遵守 Java 语法规范，否则编译会报错**
+
+```html
+<%
+    int x = 10;
+    String str = "你好";
+    List<Employee> emps = new ArrayList<>();
+    for (int i = 0; i <= 5; i++) {
+        emps.add(new Employee(i, "emp"+i, 18+i, "emp" + i + "@163.com"));
+    }
+%>
+```
+
+**例：所有员工数据以表格的形式展现在页面中**
+
+```html
+<table border="1">
+    <thead>
+        <tr><td>ID</td><td>姓名</td><td>年龄</td><td>邮箱</td></tr>
+    </thead>
+    <tbody>
+    <%
+        for (int i = 0; i<emps.size(); i++){
+            Employee emp = emps.get(i);
+    %>
+        <tr>
+            <td><%= emp.getId() %></td>
+            <td><%= emp.getName() %></td>
+            <td><%= emp.getAge() %></td>
+            <td><%= emp.getEmail() %></td>
+        </tr>
+    <%
+        }
+    %>
+    </tbody>
+</table>
+```
+
+*   需要注意的是，当页面结构比较 复杂时，JSP 脚本片段与 HTML 标签等其他元素嵌套使用，容易使得页面结构混乱
+
+### JSP注释
+
+*   **同任何其他编程语言一样，JSP 也有自己的注释方式**
+
+    `<%-- 注释信息--%>`
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>JSP 注释</title>
+</head>
+<body>
+    <%--这是 JSP 注释信息--%>
+    <!--这是 HTML 注释信息-->
+</body>
+</html>
+```
+
+（此处需结合幻灯片中的图片讲解：展示JSP源码和浏览器查看源文件的对比，HTML注释存在而JSP注释消失）
+
+**JSP 注释语法与 HTML 注释语法很类似，但两者的区别在于，HTML 注释会被 Tomcat 当做普通文本解释执行后发送到客户端，而 JSP 在被翻译成 Servlet 时，其页面的注释信息 会被忽略**
+
+### JSP九大对象
+
+*   **Web服务器在调用jsp时，会给Jsp提供如下的九个java对象（无需声明，直接使用）**
+
+| 内置对象名称 | 描述 |
+| :--- | :--- |
+| out | 用于页面输出 |
+| request | 客户端请求对象，用于获取用户请求信息，同 HttpServletRequest 对象 |
+| response | 服务端响应信息对象，同 HttpServletResponse 对象 |
+| config | 服务端配置，用于获取初始化参数，tong ServletConfig 对象 |
+| session | 回话对象，用于保存回话范围内的数据，同 HttpSession |
+| application | 应用程序对象，用于保存所有用户共享信息，同 ServletContext 对象 |
+| page | 指当前页面转化后的 Servlet 类的实例，很少使用 |
+| pageContext | JSP 的页面容器，当前 JSP 范围内有效 |
+| exception | 表示 JSP 页面所发生的异常，在错误页面中才起作用 |
+
+### OUT对象
+
+*   **out 对象会将数据先插入到缓冲区中，只有调用response.getWriter()方法，将数据刷新到 response 的缓冲区 后再输出**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>out 对象</title>
+</head>
+<body>
+    <%
+        out.println("out 输出 1 <br/>");
+        out.println("out 输出 2 <br/>");
+        response.getWriter().write("response 输出 1 <br/>");
+        response.getWriter().write("response 输出 2 <br/>");
+    %>
+</body>
+</html>
+```
+
+（此处需结合幻灯片中的图片讲解：展示运行结果，response输出的内容显示在out输出的内容之前）
+
+### 四大域对象
+
+一共有 4 个常用的域对象，分别是 `pageContext`， `request`，`session`，`application` 对象。四个域对象功能一样，都用来存取数据，不同的是它们 对数据的存取范围。
+
+**表 8-3 JSP 四大域对象**
+
+| 域对象名称 | 类型 | 数据存取范围 |
+| :--- | :--- | :--- |
+| pageContext | PageContextImpl | 当前 JSP 范围内有效 |
+| request | HttpServletRequest | 一次请求内有效 |
+| session | HttpSession | 一个会话范围内有效（一次会话指打开浏览器访问服务器，直到关闭浏览器为止） |
+| application | ServletContext | 整个 web 工程范围内有效(只要 web 工程不停止，数据都在) |
+
+#### 代码示例
+
+**DomainObjectServlet.java**
+
+```java
+@WebServlet(name = "DomainObjectServlet", urlPatterns = "/domainObject")
+public class DomainObjectServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // 获取 session 对象
+        HttpSession session = request.getSession();
+        // 获取 servletContext 对象即 JSP 中的 application 对象
+        ServletContext servletContext = this.getServletContext();
+        // 存数据
+        request.setAttribute("reqKey", "保存在 request 对象中的数据");
+        session.setAttribute("sessKey","保存在 session 对象中的数据");
+        servletContext.setAttribute("appKey", "保存在 application 对象中的数据");
+        // 请求转发
+        request.getRequestDispatcher("domainObject1.jsp").forward(request, response);
+    }
+}
+```
+
+**domainObject1.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>域对象</title>
+</head>
+<body>
+    <%
+        pageContext.setAttribute("pageContextKey", "保存在 pageContext 对象中的数据");
+    %>
+    <%= pageContext.getAttribute("pageContextKey") %> <br>
+    <%= request.getAttribute("reqKey") %> <br>
+    <%= session.getAttribute("sessKey") %> <br>
+    <%= application.getAttribute("appKey") %> <br>
+    <a href="domainObject2.jsp">跳转到 domainObject2.jsp 页面</a> <br>
+</body>
+</html>
+```
+
+**domainObject2.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>域对象</title>
+</head>
+<body>
+    <%= pageContext.getAttribute("pageContextKey") %> <br>
+    <%= request.getAttribute("reqKey") %> <br>
+    <%= session.getAttribute("sessKey") %> <br>
+    <%= application.getAttribute("appKey") %> <br>
+</body>
+</html>
+```
+
+**结果**
+
+（此处需结合幻灯片中的图片讲解：
+图 8-11 domainObject1.jsp 显示结果：所有数据均正常显示。
+图 8-12 domainObject2.jsp 显示结果：pageContext和request数据为null，session和application数据正常显示。
+图 8-13 重启浏览器后访问 domainObject2.jsp 页面结果：只有application数据正常显示。）
+
+### JSP 标签
+
+*   **JSP 页面中可以嵌套一些 Java 代码来完成某种功能，但有时这种Java 代码会使得 JSP页面混乱，不利于调试和维护，为了解决这一问题，SUN 公司在 JSP 页面中嵌套一些标签，这些标签可以完成各种通用的 JSP 页面功能，本节将主要针对`<jsp:include>`和`<jsp:forward>`这两个 JSP 标签进行讲解**
+
+#### `<JSP:INCLUDE>`标签
+
+*   **`<jsp:include>`标签用于把另外一个资源的输出内容插入进当前页面的输出内容之中，这种在 JSP 页面执行时的引入方式称之为动态包含**
+
+    `<jsp:include page=”relativeURL” flush=”true | false”>`
+
+*   page 属性用于指定被引入资源的相对路径，flush 属性指定在插入 其他资源的输出内容时，是否先将当前 JSP 页面的已输出内容刷新到客户端
+
+**dynInclude.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>包含页面</title>
+</head>
+<body>
+    dynInclude.jsp 的内容
+    <jsp:include page="beInclude.jsp" flush="true"></jsp:include>
+</body>
+</html>
+```
+
+**beInclude.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>被包含页面</title>
+</head>
+<body>
+    <% Thread.sleep(2000); %>
+    beInclude.jsp 中的内容
+</body>
+</html>
+```
+
+#### `<JSP:FORWARD>`标签
+
+*   **在 JSP 页面中，有时需要将请求转发给另外一个资源，这时除了RequestDispatcher 接口的 forward()方法可以实现外，还可以通过`<jsp:forward>`标签来实现**
+
+    `<jsp:forward page = “relativeURL”>`
+
+**jspForward.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>jspForward 标签</title>
+</head>
+<body>
+    <h4>跳转前内容</h4>
+    <% Thread.sleep(2000);%>
+    <jsp:forward page="jspForward2.jsp"></jsp:forward>
+</body>
+</html>
+```
+
+**jspForward2.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>jspForward 跳转后的页面</title>
+</head>
+<body>
+    这是使用 jspforward 标签跳转后的页面。
+</body>
+</html>
+```
+
+启动 Tomcat 访问 jspForward.jsp 页面，浏览器并不会先显示“跳转前内容”，而是等待 了 2 秒后直接跳到了 jspForward.jsp 页
+
+从上述结果可以看出，浏览器默认情况下是先解析完整个页面后再显示内容的，当解析到`<jsp:forward>`标签后直接跳转到了新页面
+
+### JAVABEAN
+
+*   **JavaBean是Java开发中一个可以重复使用的软件组件，具有如下规范**
+    1.  必须有一个公共、无参构造方法
+    2.  提供公共的getter和setter方法让外部程序设置和获取JavaBean的属性
+*   **普通JavaBean也可以成为POJO, Entity…**
+
+```java
+public class Person {
+    private int age;
+    private String name;
+    public Person(){}
+
+    public int getAge() {
+        return age;
+    }
+    public void setAge(int age) {
+        this.age = age;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+### JSP 开发模型
+
+*   **为了更方便地使用 JSP 技术，SUN 公司为 JSP 技术提供了两种开发模型：JSP Model1 和 JSP Model2。JSP Model2 模型是在 JSP Model1 模型的基础上提出来的，它提供了更清晰地代码分层，分层的目的是为了解耦。解耦使得多人合作开发大型 Web 项目变得更加容易，并且方便项目后期的维护和升级。接下 来就针对这两种开发模型分别进行详细的介绍。**
+
+#### JSP MODEL1
+
+**工作原理如图**
+
+（此处需结合幻灯片中的图片讲解：展示Model1流程图，客户端 -> 1.请求 -> JSP -> 2.调用 -> JavaBean -> 3.数据访问 -> 企业数据库 -> 4.响应）
+
+**例 8.12：使用 Model1 完成用户登录功能**
+
+**(1) 创建名的用户实体类 User.java，表示实体类数据**
+
+```java
+public class User {
+    private String username;
+    private String password;
+    public User() {} // 无参构造方法
+    // 根据需求添加有参构造方法
+    // 省略 get(), set()方法
+}
+```
+
+**(2) 创建 UserDao 类（业务逻辑类）让 JSP 层和JavaBean 之间能够交互。其中包括了 一个判断 User 对象的账号密码是否正确的方法 userLogin()**
+
+**UserDAO.java**
+
+```java
+public class UserDao {
+    public boolean userLogin(User user) {
+        return "jason".equals(user.getUsername()) & 
+               "123".equals(user.getPassword());
+    }
+}
+```
+
+**(3) 使用一个 login.jsp 界面来模拟登录**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>登录界面</title>
+</head>
+<body>
+<form action="doLogin.jsp" method="post">
+    <table>
+        <tr>
+            <td>用户名：</td>
+            <td><input type="text" name="username"></td>
+        </tr>
+        <tr>
+            <td>密码：</td>
+            <td><input type="password" name="password"></td>
+        </tr>
+        <tr>
+            <td colspan="2"><input type="submit" value="提交"></td>
+        </tr>
+    </table>
+</form>
+</body>
+</html>
+```
+
+**(4) 创建 doLogin.jsp 处理登录**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>处理登录请求</title>
+</head>
+<body>
+    <jsp:useBean id="user" class="chap08.User" scope="page" />
+    <jsp:useBean id="userDao" class="chap08.UserDao" scope="page" />
+    <jsp:setProperty name="user" property="*" />
+    <%
+        if (userDao.userLogin(user)) {
+            request.getRequestDispatcher("welcome.jsp").forward(request, response);
+        } else {
+            response.sendRedirect("login.jsp");
+        }
+    %>
+</body>
+</html>
+```
+
+**(5) 创建 welcome.jsp**
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>欢迎页面</title>
+</head>
+<body>
+    <h2>登录成功，欢迎！</h2>
+</body>
+</html>
+```
+
+从上例中可以发现，尽管 Model1 的方式将一部分 Java 代码封装到JavaBean 里，但 JSP 页面仍然需要嵌入大量的 Java 代码，使得代码可读性差，维护困难。
+
+（此处需结合幻灯片中的图片讲解：展示登录界面输入jason/...后的“登录成功，欢迎！”结果）
+
+#### JSP MODEL2
+
+*   **Servlet+JSP+JavaBean 的方式实现了流程控制、业务逻辑和页面显示的分离**
+
+（此处需结合幻灯片中的图片讲解：展示Model2流程图，客户端 -> 请求 -> Servlet(控制层) -> Service层 -> Dao层 -> 数据库集群，以及各层与Entity层的交互，最后由Servlet转发请求到JSP视图层进行响应）
+
+**例 8-13：使用 Model2 模拟实现用户登录**
+
+*   **JSP Model2模型的思想，Web项目通常可以分成action层（控制器JavaBean），service 层（业务 JavaBean），dao 层（数据访问JavaBean）和 entity 层（简单 JavaBean）等基本层次结构**
+
+**(1) dao 层中创建 UserDao 接口和UserDaoImpl 实现**
+
+```java
+public interface UserDao {
+    public boolean userLogin(User user);
+}
+public class UserDaoImpl implements UserDao{
+    @Override
+    public boolean userLogin(User user) {
+        return "jason".equals(user.getUsername()) &
+               "123".equals(user.getPassword());
+    }
+}
+```
+
+**(2) 在 service 层中创建 UserService 接口 UserServiceImpl 实现**
+
+```java
+public interface UserService {
+    public boolean login(User user);
+}
+
+public class UserServiceImpl implements UserService{
+    private UserDao userDao = new UserDaoImpl();
+    @Override
+    public boolean login(User user) {
+        return userDao.userLogin(user);
+    }
+}
+```
+
+**(3) 创建控制器 LoginServlet.java 来负责接收登录界面（login.jsp）提交的请求，并调 用 service 层的业务方法**
+
+```java
+@WebServlet(name = "LoginServlet", urlPatterns = "/login")
+public class LoginServlet extends HttpServlet {
+    private UserService userService = new UserServiceImpl();
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("utf-8");
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        User user = new User();
+        user.setPassword(password);
+        user.setUsername(username);
+        if (userService.login(user)) {
+            request.getRequestDispatcher("welcome.jsp").forward(request, response);
+        } else {
+            response.sendRedirect("login.jsp");
+        }
+    }
+}
+```
+
+（此处需结合幻灯片中的图片讲解：展示登录界面和登录成功欢迎界面）
+
+### 总结
+
+*   **角色：视图层（显示数据）**
+*   **JSP表达式 （重点）**
+*   **JSP指令和脚本片段 （会用）**
+*   **JSP九大对象 （了解）**
+*   **request属性范围（重点）**
+*   **JSP MODEL（重点）**
+
+## 第9章 基于数据库的WEB开发
+
+### JDBC基础
+
+#### JDBC相关概念介绍
+
+*   Java为了简化、统一对数据库的操作，定义了一套Java操作数据库的规范（接口），称之为JDBC
+*   这套接口由数据库厂商去实现，这样，开发人员只需要学习jdbc接口，并通过jdbc加载具体的驱动，就可以操作数据库。
+
+数据库驱动实质上是不同数据库厂商对JDBC接口的实现，比如MySQL驱动用于连接MySQL 数据库，Oracle驱动用于连接Oracle 数据库，这体现了面向接口编程的思想
+
+（此处需结合幻灯片中的图 9-1 JDBC 工作原理图进行讲解：展示应用程序通过JDBC标准接口，与具体的MySQL驱动或Oracle驱动交互，进而访问MySQL数据库或Oracle数据库的层次结构。）
+
+#### 入门案例
+
+编写 JDBC 程序读取 users 表的数据，并打印在控制台中
+
+(1) 在 MySQL创建数据库、表并插入测试
+
+```sql
+create database jdbc;
+
+use jdbc;
+
+create table users(
+    id int primary key auto_increment,
+    username varchar(30),
+    password varchar(30),
+    email varchar(30)
+)ENGINE = InnoDB CHARACTER SET = utf8;
+
+insert into users(USERNAME, PASSWORD, EMAIL) values("小明","123","xm@wzu.edu.cn");
+insert into users(USERNAME, PASSWORD, EMAIL) values("小红","234","xh@wzu.edu.cn");
+insert into users(USERNAME, PASSWORD, EMAIL) values("小刚","345","xg@wzu.edu.cn");
+insert into users(USERNAME, PASSWORD, EMAIL) values("小睿","456","xr@wzu.edu.cn");
+```
+
+（此处需结合幻灯片中的图 9-2 users 表数据图进行讲解：展示一个包含id, username, password, email列的表格数据。）
+
+| id | username | password | email |
+| :--- | :--- | :--- | :--- |
+| 1 | 小明 | 123 | xm@wzu.edu.cn |
+| 2 | 小红 | 234 | xh@wzu.edu.cn |
+| 3 | 小刚 | 345 | xg@wzu.edu.cn |
+| 4 | 小睿 | 456 | xr@wzu.edu.cn |
+
+(2) 建立与数据库之间的访问连接
+
+1) 首先需要使用 `Class.forName()` 方法加载数据库驱动，数据库驱动即为数据库厂商开发的针对 JDBC 接口的实现类。比如将 MySQL 公司实现 JDBC 接口的驱动包拷贝到项目工程的 lib 目录中 (WEB-INF/lib/)，本教程使用的驱动包为 mysql-connector-java-5.1.0-bin.jar
+
+```java
+Class.forName("com.mysql.jdbc.Driver");
+```
+
+2) 加载驱动程序之后，将使用 DriverManager 类的 `getConnection()` 方法建立与数据库的连接。此方法接受 3 个参数，分别表示数据库 URL、数据库用户名和密码
+
+```java
+Connection connection = DriverManager.getConnection(String url, String name, String password);
+```
+
+3) url 写法中 jdbc 部分是固定的，subprotocol 指定连接到特定数据库的驱动程序， subname 部分表示连接的服务器 IP 地址、端口、数据库名称以及参数等信息。
+
+`jdbc:subprotocol:subname`
+
+以 mysql 为例，
+
+`jdbc:mysql://localhost:3306/jdbc?useUnicode=true&characterEncoding=UTF-8`
+
+(3) 对编写好的 SQL 语句发送到数据库执行
+
+首先通过 Connection 对象获取 Statement 对象，主要方式有两种，分别是通过调用 `createStatement()` 方法创建基本的 Statement 对象和通过调用 `prepareStatement()` 方法创建预编译的 PreparedStatement 对象
+
+```java
+Statement stmt = connection.createStatement();
+```
+
+有了 Statement 对象后，便可以使用它来执行 SQL 语句。所有的 Statement 都有三种方法来执行 SQL 语句
+
+| 方法名称 | 功能描述 |
+| :--- | :--- |
+| execute(String sql) | 用于执行各种 SQL 语句，该方法返回一个 boolean 类型的值，如果为 true，表示所执行的 SQL 语句具备查询结果。 |
+| executeQuery(String sql) | 用于执行 SQL 中的 select 语句，该方法返回一个表示查询结果的 ResultSet 对象 |
+| executeUpdate(String sql) | 用于执行 SQL 中的 insert、update 和 delete 语句。该方法返回一个 int 类型的值，表示数据库中受该 SQL 语句影响的记录的数据。 |
+
+以 executeQuery()方法为例，具体代码如下
+
+```java
+String sql = "select * from users";
+ResultSet rs = stmt.executeQuery(sql);
+```
+
+(4) 对数据库返回的结果进行处理
+
+```java
+while (rs.next()){
+    int id = rs.getInt("id");
+    String username = rs.getString("username");
+    String password = rs.getString("password");
+    String email = rs.getString("email");
+    System.out.println(id + "--" + username + "--" + password + "--" + email);
+}
+```
+
+上述代码首先调用 ResultSet 对象的 `next()` 将记录指针向下移动一行（默认指向表的标题行），判断是否存在查询结果数据；如果存在，则根据列的名称以及数据类型调用不同的 `getXxx()` 方法获取数据并赋值，最终将每一行数据打印到控制台中
+
+(5) 回收数据库资源
+
+使用 `close()` 方法关闭数据库连接，释放资源，包括关闭 ResultSet 对象、Statement 对象和 Connection 对象。释放资源应按照创建的顺序逐一释放，先创建的后释放、后创建的先释放。
+
+```java
+rs.close();
+stmt.close();
+connection.close();
+```
+
+完整的代码如 JDBCDemo1.java
+
+```java
+public class JDBCDemo1 {
+    public static void main(String[] args) {
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection connection=DriverManager.getConnection("jdbc:mysql://localhost:3306/jdbc","root", "root");
+            Statement stmt = connection.createStatement();
+            String sql = "select * from users";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()){
+                int id = rs.getInt("id");
+                String username = rs.getString("username");
+                String password = rs.getString("password");
+                String email = rs.getString("email");
+                System.out.println(id + "--" + username + "--" + password + "--" + email);
+            }
+            rs.close();
+            stmt.close();
+            connection.close();
+        }
+    }
+}
+```
+
+（此处需结合幻灯片中的图 9-3 控制台打印 users 表数据图进行讲解：展示程序运行后在控制台输出的四行用户信息。）
+
+#### 优化
+
+*   将MySQL数据库的连接信息配置在db.properties中
+
+```properties
+driver=com.mysql.jdbc.Driver
+url=jdbc:mysql://localhost:3306/jdbc?useUnicode=true&characterEncoding=UTF-8
+username=root
+password=root
+```
+
+*   创建 JDBCUtils.java
+    *   该类主要用于读取配置文件、加载驱动获取数据库连接、封装关闭数据库资源等操作
+    *   代码中静态代码块在加载 JDBCUtils 类的时候执行并且只执行一次，以保证获取数据库连接的效率
+
+*   使用 PreparedStatement 代替 Statement
+    *   (1) 代码的可读性和可维护性
+
+```java
+Statement stmt = conn.createStatement();
+String sql = "insert into users (username, password, email) values ('"+username+"','"+password+"','"+email+"')";
+stmt.executeUpdate(sql);
+```
+
+可使用 PreparedStatement 对象修改上述代码，具体如下。
+
+```java
+String sql1 = "insert into users(username, password, email) values(?, ?, ?)";
+PreparedStatement pstmt = conn.prepareStatement(sql1); // 占位符
+pstmt.setString(1, username);
+pstmt.setString(2, password);
+pstmt.setString(3, email);
+pstmt.executeUpdate(sql1);
+```
+
+PreparedStatement 接口继承自 Statement 接口，PreparedStatement 实例包含已编译的 SQL 语句，SQL 语句可具有一个或多个输入参数。这些输入参数的值在 SQL 语句创建时未被指定，而是为每个输入参数保留一个问号“?”作为占位符
+
+*   (2) 提高性能
+    由于 SQL 语句有可能被重复调用，而使用 PreparedStatement 对象声明的 SQL 语句在被数据库编译后的执行代码会缓存下来，因此下次调用时不需要重新编译，只要将参数直接传入编译过的语句执行代码中（相当于一个函数）即可，从而提高了性能
+
+*   (3) 极大地提高了安全性
+    使用statement, 在 WEB 环境下会容易受到“SQL 注入”攻击，导致整个应用程序不安全
+
+```sql
+select * from users where username='"+name+"' and password='"+passwd+"'";
+```
+
+如果前端用户把 ‘jason’ 作为 username 的值，[‘or’‘1’=‘1’]作为 passwd 的值传进来，则后端执行的 SQL 语句变为
+
+```sql
+select * from users where username = 'jason' and passwd = '' or '1'='1'
+```
+
+因为'1'='1'肯定成立，因此前端用户可以不使用任何密码通过验证。
+
+#### 例 9.2 查询用户名中有“小”字的所有用户信息
+
+```java
+public class JDBCOptimize {
+    public static void main(String[] args) throws SQLException {
+        Connection conn = JDBCUtils.getConnection(); //获取连接
+        String sql = "select * from users where username like ?";
+        PreparedStatement pstmt = conn.prepareStatement(sql); // 预编译 SQL
+        String str = "小";
+        pstmt.setString(1, "%" + str + "%"); //处理参数
+        ResultSet rs = pstmt.executeQuery(); //执行查询并返回结果集
+        //处理结果集
+        while (rs.next()){
+            int id = rs.getInt("id");
+            String username = rs.getString("username");
+            String password = rs.getString("password");
+            String email = rs.getString("email");
+            System.out.println(id + "--" + username + "--" + password + "--" + email);
+        }
+        //释放资源
+        JDBCUtils.release(conn, pstmt, rs);
+    }
+}
+```
+
+### 基于JDBC的WEB开发
+
+*   本节将结合上一章内容中介绍的 MVC 模型讲解在 Web 开发中常见的 CRUD 操作（业务数据的增、删、改、查），分页查询以及数据库连接池的使用
+
+（此处需结合幻灯片中的图 9-4 web 应用层次结构图进行讲解：展示了一个典型的Web项目结构，包含action, dao, entity, service, utils, web等包。）
+
+#### 例 9.3: JSP 页面中显示所有用户的信息
+
+(1) 准备相关工具类和实体类, 将 JDBCUtils.java 类放到 utils 包下，在 entitiy 层创建实体类
+
+```java
+public class User {
+    private int id;
+    private String username;
+    private String password;
+    private String email;
+    // 省略构造方法、get()， set()， toString()方法
+    ...
+}
+```
+
+(2) dao 层创建对应实体类的数据访问接口和实现类
+
+（此处需结合幻灯片中的项目结构图进行讲解：展示在dao包下创建user子包，并包含UserDao接口和UserDaoImpl实现类。）
+
+UserDao.java
+
+```java
+public interface UserDao {
+    List<User> findUsers();
+}
+```
+
+UserDaoImpl.java
+
+```java
+public class UserDaoImpl implements UserDao{
+    @Override
+    public List<User> findUsers() {
+        List<User> users = new ArrayList<User>();
+        Connection conn = JDBCUtils.getConnection();
+        String sql = "select * from users";
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                User user = new User(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4));
+                users.add(user);
+            }
+            JDBCUtils.release(conn, pstmt, rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+}
+```
+
+(3) service 层创建对应用户业务接口及其实现类
+
+UserService.java
+
+```java
+public interface UserService {
+    List<User> findAllUsers();
+}
+```
+
+UserServiceImpl.java
+
+```java
+public class UserServiceImpl implements UserService{
+    private UserDao userDao = new UserDaoImpl(); // 与dao层关联
+    @Override
+    public List<User> findAllUsers() {
+        return userDao.findUsers(); //调用 dao 层的操作
+    }
+}
+```
+
+(4) 在 action 层创建接受请求的 servlet 控制器
+
+UserFindAllServlet.java
+
+```java
+@WebServlet(name = "UserFindAllServlet", urlPatterns = "/findAllUsers")
+public class UserFindAllServlet extends HttpServlet {
+    //关联 service 层
+    private UserService userService = new UserServiceImpl();
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List<User> users = userService.findAllUsers();
+        //将数据库获取的数据保存到 request 范围内
+        request.setAttribute("users", users);
+        //转发到目标页面,使得数据信息能在前端页面显示
+        request.getRequestDispatcher("users.jsp").forward(request, response);
+    }
+}
+```
+
+(5) 在 web 根目录下创建前端 JSP 页面展示模型数据信息
+
+```html
+<body>
+<%
+    //获取后台用户数据
+    List<User> users = (ArrayList)(request.getAttribute("users"));
+%>
+<div><a href="addUser.jsp">新增用户</a></div>
+<table border="1">
+    <tr>
+        <td>ID</td><td>用户名</td><td>密码</td><td>邮箱</td><td>操作</td>
+    </tr>
+    <%
+        for(int i=0; i<users.size(); i++) {
+            User user = users.get(i);
+    %>
+    <tr>
+        <td><%= user.getId() %></td>
+        <td><%= user.getUsername() %></td>
+        <td><%= user.getPassword() %></td>
+        <td><%= user.getEmail() %></td>
+        <td><a href="updateUser.jsp">更新</a> <a href="">删除</a></td>
+    </tr>
+    <%
+        }
+    %>
+</table>
+</body>
+```
+
+（此处需结合幻灯片中的图 9-6 显示所有用户信息图进行讲解：展示了在网页上以表格形式列出所有用户数据，并包含新增、更新、删除等操作链接。）
+
+#### 例 9.4: 新增用户
+
+addUser.jsp
+
+```html
+<body>
+    <h2>新增用户</h2>
+    <form action="/addUser" method="post">
+        输入用户名: <input type="text" name="username" /> <br/>
+        输入密码: <input type="password" name="password" /> <br/>
+        输入邮箱:<input type="text" name="email" /> <br/>
+        <input type="submit" value="新增">
+    </form>
+</body>
+```
+
+（此处需结合幻灯片中的图 9-7 新增用户界面图进行讲解：展示一个包含用户名、密码、邮箱输入框和新增按钮的表单。）
+
+UserAddServlet.java
+
+```java
+@WebServlet(name = "UserAddServlet", urlPatterns = "/addUser")
+public class UserAddServlet extends HttpServlet {
+    private UserService userService = new UserServiceImpl();
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        //获取用户请求数据
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        String email = request.getParameter("email");
+        User user = new User(0, username, password, email);
+        userService.addUser(user);
+        response.sendRedirect("addUserSuc.jsp");
+    }
+}
+```
+
+service 层只需要添加并实现相应的业务方法 addUser()即可
+
+dao 层操作
+
+UserDao.java
+
+```java
+public interface UserDao {
+    //省略其他方法
+    void insert(User user);
+}
+```
+
+UserDaoImpl.java
+
+```java
+public class UserDaoImpl implements UserDao{
+    //省略其他方法
+    public void insert(User user) {
+        Connection conn = JDBCUtils.getConnection();
+        String sql = "insert into users(username, password, email) values(?, ?, ?)";
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, user.getUsername());
+            pstmt.setString(2, user.getPassword());
+            pstmt.setString(3, user.getEmail());
+            pstmt.executeUpdate();
+            JDBCUtils.release(conn, pstmt, null);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+#### 例 9.5: 更新用户
+
+1) 首先在 users.jsp 中的“操作”超链接中指定 href 属
+
+`<a href="/findUserById?id=<%= user.getId()%>">更新</a>`
+
+2) UserFindByIdServlet.java 来映射URL请求
+
+```java
+@WebServlet(name = "UserFindByIdServlet", urlPatterns = "/findUserById")
+public class UserFindByIdServlet extends HttpServlet {
+    private UserService userService = new UserServiceImpl();
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        //获取当前用户的id值
+        int id = Integer.parseInt(request.getParameter("id"));
+        User user = userService.findUserById(id);
+        request.setAttribute("user", user);
+        request.getRequestDispatcher("updateUser.jsp").forward(request, response);
+    }
+}
+```
+
+UserDaoImpl.java
+
+```java
+public class UserDaoImpl implements UserDao{
+    //省略其他方法
+    public User findUserById(int id) {
+        Connection conn = JDBCUtils.getConnection(); //获取连接
+        String sql = "select * from users where id = ?"; //准备 SQL 语句
+        PreparedStatement pstmt = null;
+        User user = null;
+        try {
+            pstmt = conn.prepareStatement(sql); // 预编译 SQL
+            pstmt.setInt(1, id); //根据ID 设置参数
+            ResultSet rs = pstmt.executeQuery(); //执行查询
+            if (rs.next()){ //如果该用户存在,则获取字段并封装成对象
+                user = new User(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4));
+            }
+            JDBCUtils.release(conn, pstmt, rs); //释放资源
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return user; //返回 User 对象
+    }
+}
+```
+
+成功获取用户数据后, UserFindByIdServlet 将当前用户保存到 request 域对象中并转发到 updateUser.jsp,
+
+```html
+<body>
+<%
+    User user = (User)(request.getAttribute("user"));
+%>
+<h2>更新用户</h2>
+<form action="/updateUser" method="post">
+    <input type="hidden" name="id" value="<%= user.getId()%>" />
+    输入用户名: <input type="text" name="username" value="<%= user.getUsername()%>" /> <br/>
+    输入密码: <input type="password" name="password" value="<%= user.getPassword()%>" /> <br/>
+    输入邮箱:<input type="text" name="email" value="<%= user.getEmail()%>" /> <br/>
+    <input type="submit" value="更新">
+</form>
+</body>
+```
+
+（此处需结合幻灯片中的更新用户界面图进行讲解：展示一个预先填充了用户信息的表单，供用户修改。）
+
+UserUpdateServlet.java
+
+```java
+@WebServlet(name = "UserUpdateServlet", urlPatterns = "/updateUser")
+public class UserUpdateServlet extends HttpServlet {
+    private UserService userService = new UserServiceImpl();
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        int id = Integer.parseInt(request.getParameter("id"));
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        String email = request.getParameter("email");
+        User user = new User(id, username, password, email);
+        userService.updateUser(user);
+        response.sendRedirect("updateUserSuc.jsp");
+    }
+}
+```
+
+更新成功后，跳转到更新成功页面
+
+UserDaoImpl.java
+
+```java
+public class UserDaoImpl implements UserDao{
+    //省略其他方法
+    public void updateUser(User user) {
+        Connection conn = JDBCUtils.getConnection();
+        String sql = "update users set username = ?, password = ?, email = ? where id = ?";
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, user.getUsername());
+            pstmt.setString(2, user.getPassword());
+            pstmt.setString(3, user.getEmail());
+            pstmt.setInt(4, user.getId());
+            pstmt.executeUpdate();
+            JDBCUtils.release(conn, pstmt, null);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+#### 例 9.6: 删除用户
+
+首先在 users.jsp 中的“删除”超链接中指定 href 属性，如
+
+`<a href="javascript:deleteUser('<%= user.getId()%>')">删除</a>`
+
+当“删除”超链接被点击后会执行 JavaScript 函数：deleteUser(id)，并将当前用户的 id 值作为参数传入，具体如
+
+```javascript
+<script>
+    function deleteUser(id) {
+        if (confirm("确定要删除嘛?")) {
+            location.href = "/userDelete?id=" + id;
+        }
+    }
+</script>
+```
+
+（此处需结合幻灯片中的删除确认弹窗图进行讲解。）
+
+用户单击“确定”按钮后，页面会向 URL 路径为“/userDelete”的 servlet 发送请求，并将当前用户的 id 属性值作为请求参数传过去。
+
+UserDeleteByIdServlet.java
+
+```java
+@WebServlet(name = "UserDeleteByIdServlet", urlPatterns = "/userDelete")
+public class UserDeleteByIdServlet extends HttpServlet {
+    private UserService userService = new UserServiceImpl();
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        userService.deleteUserById(id);
+        response.sendRedirect("delUserSuc.jsp");
+    }
+}
+```
+
+UserDaoImpl.java
+
+```java
+public class UserDaoImpl implements UserDao{
+    //省略其他方法
+    public void deleteUserById(int id) {
+        Connection conn = JDBCUtils.getConnection();
+        String sql = "delete from users where id = ?";
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+            JDBCUtils.release(conn, pstmt, null);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+#### 分页查询
+
+基于 mysql 数据库进行分页查询与 oracle 数据库相比要简单的多，其基本思想是根据起始行号和行数获取相应的数据，SQL 语句语法如下所示
+
+`select * from tb_name limit beginIndex, totalRows;`
+
+tb_name 表示表的名称，beginIndex 表示起始行号（从 0 开始），totalRows 表示获取数据的行数
+
+例如，假设 users 表中总共有 100 行数据，每一页显示 10 行，则一共可分成 10 页数据。第 1 页的数据可以从第 0 行开始取（beginIndex=0），共取 10 行（totalRows=10）第 2 页的数据可以从第 10 行开始取（beginIndex=10），共取 10 行（totalRows=10），以此类推。因此，可以使用根据根据当前页码（pageNow）和每页显示数据的行数（pageCount），来确定分页查询的 SQL 语句，
+
+`select * from tb_name limit (pageNow-1)*pageCount, pageCount;`
+
+#### 例 9.7: 分页显示所有用户信息
+
+（此处需结合幻灯片中的分页显示用户信息图进行讲解：展示一个带有分页导航（共...条记录，上一页，下一页）的用户列表。）
+
+(1) 使用 PreparedStatement 批处理添加数据
+
+```java
+public class JDBCBatch {
+    public static void main(String[] args) throws SQLException {
+        Connection conn = JDBCUtils.getConnection();
+        String sql = "insert into users(username, password, email) values(?, ?, ?)";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        for (int i = 0; i < 100; i++) {
+            pstmt.setString(1, "name" + i);
+            pstmt.setString(2, "pwd" + i);
+            pstmt.setString(3, "email" + i + "@163.com");
+            pstmt.addBatch(); //添加成批
+        }
+        pstmt.executeBatch(); //批处理
+        JDBCUtils.release(conn, pstmt, null);
+    }
+}
+```
+
+(2) dao 层中添加分页查询方法及其实现
+
+```java
+public interface UserDao {
+    //省略其他方法
+    List<User> findAllUsersPageable(int pageNow, int pageCount);
+    int getTotalRows();
+}
+```
+
+```java
+//获取分页数据
+public List<User> findAllUsersPageable(int pageNow, int pageCount) {
+    List<User> users = new ArrayList<User>();
+    Connection conn = JDBCUtils.getConnection();
+    String sql = "select * from users limit ?, ?"; //分页查询 SQL
+    // ... try-catch block to execute query and populate users list
+    pstmt.setInt(1, (pageNow-1)*pageCount); //设定分页参数
+    pstmt.setInt(2, pageCount);
+    // ...
+    return users;
+}
+
+//获取总记录数
+public int getTotalRows() {
+    Connection conn = JDBCUtils.getConnection();
+    String sql = "select count(*) from users";
+    // ... try-catch block to execute query and return count
+    return count;
+}
+```
+
+(3) 创建 UserFindAllPageableServlet 分页查询所有用户信息
+
+```java
+@WebServlet(name = "UserFindAllPagableServlet", urlPatterns = "/findUserPageable")
+public class UserFindAllPageableServlet extends HttpServlet {
+    private UserService userService = new UserServiceImpl();
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String pageInfo = request.getParameter("pageNow");
+        if (pageInfo == null) { //默认当前页为1
+            pageInfo = "1";
+        }
+        int pageNow = Integer.parseInt(pageInfo); //当前页
+        int pageCount = 10; //每页显示记录数
+        int totolRows = userService.getTotalUserCount(); //获取总记录数
+        //计算总页数
+        int totalPages = (totolRows % pageCount == 0) ? (totolRows / pageCount) : (totolRows / pageCount + 1);
+        //处理页面异常
+        if (pageNow < 1) { pageNow = 1; }
+        if (pageNow > totalPages) { pageNow = totalPages; }
+        // 封装成 Page对象,方便前端读取
+        Page page = new Page(pageNow, pageCount, totalPages, totolRows);
+        //获取分页数据
+        List<User> users = userService.findAllUsersPageable(pageNow, pageCount);
+        //保存模型信息,模型包括用户数据和页面对象数据
+        request.setAttribute("users", users);
+        request.setAttribute("page", page);
+        request.getRequestDispatcher("usersPage.jsp").forward(request, response);
+    }
+}
+```
+
+Page.java
+
+```java
+public class Page {
+    private int pageNow;
+    private int pageCount;
+    private int totalPage;
+    private int totalRows;
+    //省略构造方法和 get()、set()方法
+}
+```
+
+userPage.jsp
+
+```html
+<%
+    //获取分页数据
+    List<User> users = (ArrayList)(request.getAttribute("users"));
+    Page p = (Page)(request.getAttribute("page")); //获取页面对象
+%>
+...
+<table border="1">
+    ... // 与 users.jsp 相同
+</table>
+共<%= p.getTotalRows()%>条记录, <%=p.getPageNow()%>/<%=p.getTotalPage()%>
+<a href="/findUserPageable?pageNow=<%= p.getPageNow() - 1 %>">上一页</a>
+<a href="/findUserPageable?pageNow=<%= p.getPageNow() + 1 %>">下一页</a>
+...
+</body>
+```
+
+### 数据库连接池
+
+*   应用程序直接获取数据库连接的缺点
+    用户每次请求都需要向数据库获得链接，而数据库创建连接通常需要消耗相对较大的资源，创建时间也较长。假设网站一天10万访问量，数据库服务器就需要创建10万次连接，极大的浪费数据库的资源，并且极易造成数据库服务器内存溢出、宕机。
+
+*   使用数据库连接池优化程序性能
+    数据库连接池在初始化时将创建一定数量的数据库连接放到连接池中，
+
+*   数量如何设置？
+    *   最小连接数：是连接池一直保持的数据库连接
+        *   当请求数超过最小连接数时，会创建新连接。
+    *   最大连接数：是连接池能申请的最大连接数
+        *   当请求数超过最大连接数时，请求排队等待。
+
+（此处需结合幻灯片中的连接池工作原理图进行讲解：展示用户程序从连接池获取连接、使用后归还连接的流程。）
+
+#### Druid 连接池
+
+Druid 为阿里巴巴的数据源（数据库连接池），它不仅集成了 c3p0、dbcp、proxool 等连接池的优点，还加入了日志监控机制，能有效的监控数据库连接池和 SQL 的执行情况。Druid 的 DataSource 实现类为 com.alibaba.druid.pool.DruidDataSource
+
+| 配置 | 说明 |
+| :--- | :--- |
+| url | 连接数据库的 url，不同的数据库不一样 |
+| username | 连接数据库的用户名 |
+| password | 连接数据库的密码 |
+| driverClassName | 如不配置该参数，druid 会根据 url 自动识别数据库驱动，建议配置 |
+| initialSize | 初始化时建立物理连接的个数 |
+| maxActive | 最大活动连接数量 |
+| minIdle | 最小连接数 |
+| filters | 内置过滤器若不配置则不会统计 SQL 执行 |
+
+在 src 目录下创建 dbpool.properties
+
+```properties
+driverClassName=com.mysql.jdbc.Driver
+url=jdbc:mysql://localhost:3306/jdbc?useUnicode=true&characterEncoding=UTF-8
+username=root
+password=root
+initialSize=10
+maxActive=10
+minIdle=10
+filters=stat
+```
+
+DruidUtil 工具类来读取配置信息并获取 Connection 对象
+
+```java
+public class DruidUtil {
+    static DruidDataSource dataSource;
+    static {
+        Properties prop = new Properties();
+        try {
+            prop.load(DruidUtil.class.getClassLoader().getResourceAsStream("dbpool.properties"));
+            dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(prop);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+要在 Web 端监控数据库及 SQL 执行情况，只需要在 web.xml 文件中配置相关的 servlet 即可
+
+```xml
+<servlet>
+    <servlet-name>StatViewServlet</servlet-name>
+    <servlet-class>com.alibaba.druid.support.http.StatViewServlet</servlet-class>
+    <init-param>
+        <!-- 允许清空统计数据 -->
+        <param-name>resetEnable</param-name>
+        <param-value>true</param-value>
+    </init-param>
+    <init-param>
+        <!-- 用户名 -->
+        <param-name>loginUsername</param-name>
+        <param-value>admin</param-value>
+    </init-param>
+    <init-param>
+        <!-- 密码 -->
+        <param-name>loginPassword</param-name>
+        <param-value>admin</param-value>
+    </init-param>
+</servlet>
+<servlet-mapping>
+    <servlet-name>StatViewServlet</servlet-name>
+    <url-pattern>/druid/*</url-pattern>
+</servlet-mapping>
+```
+
+启动服务器，在浏览器地址栏输入 URL 地址 http://localhost:8080/druid
+
+（此处需结合幻灯片中的图 9-13 druid 主界面图进行讲解：展示了Druid监控平台的登录界面和登录后的主监控界面。）
+
+### JDBC中使用事务
+
+*   当 Jdbc 程序向数据库获得一个 Connection 对象时，默认情况下这个 Connection 对象会自动向数据库提交在它上面发送的 SQL 语句。
+*   若想关闭这种默认提交方式，让多条 SQL 在一个事务中执行，可使用下列的 JDBC 控制事务语句
+    *   `Connection.setAutoCommit(false);` //开启事务(start transaction)
+    *   `Connection.rollback();` //回滚事务(rollback)
+    *   `Connection.commit();` //提交事务(commit)
+
+### 总结
+
+*   JDBC的应用
+*   Web开发的架构设计
+    *   分层思想
+*   前端后端交互的本质
+    *   数据的交互
+    *   前端发数据，后端处理后显示数据。
+
+## 第10章 会话技术基础
+
+#### 会话概念
+
+*   **会话可简单理解为：** 用户开一个浏览器，点击多个超链接，访问服务器多个web资源，然后关闭浏览器，整个过程称之为一个会话。
+*   **会话过程中，会产生一些数据**
+*   **如何保存这些数据，为用户服务，如购物车数据。**
+*   **HttpServletRequest 对象中和 ServletContext 对象都可以对数据进行保存，但在购物车这一问题上，都不能解决**
+    *   用户每次发送 HTTP 请求，Web 服务器都会创建一个 HttpServletRequest 对象，该 对象只能保存本次请求所传递的数据
+    *   ServletContext 对象的作用域是整个 Web 应用，因此，多个用户会共享某个特定的 ServletContext 对象。这样一来会导致多个不同的用户共享同一辆购物车
+*   **在 Servlet 技术中，提供了两个用于保存会话数据的 对象，分别是 Cookie 和 Session**
+
+### COOKIE
+
+#### 概述
+
+*   **Cookie是客户端技术，** 程序把每个用户的数据以cookie的形式写给用户各自的浏览器。当用户使用浏览器再去访问服务器中的web资源时，就会带着各自的数据去。
+
+（此处需结合幻灯片中的图片讲解：展示客户端与服务器的交互流程。1. 请求，发送Name和Password；2. 响应，cookie: Name/Password；3. 临时性/永久性存储；4. 再次请求，自动携带cookie信息。）
+
+#### 详细步骤
+
+1.  浏览器首先通过用户名和密码请求登录到服务器
+2.  服务器获取到用户名、密码并以 Cookie 的形式写回到了客户端
+3.  客户端可以零时性的将 Cookie 保存在浏览器缓存中，也可以永久性的以文件的形 式保存在硬盘里
+4.  后续访问服务器时，可自动携带 cookie 信息
+5.  根据自动携带的 Cookie 信息，服务器可以获取跟当前站点相关的用户名、密码信 息自动填入输入框，而不需用户重新输入。
+
+#### 案例
+
+*   **记住用户名密码（成功登录网站后）**
+*   **思路：**
+    *   用户登陆成功后，服务端生成cookie对象（保存了用户名密码），写到客户端。
+    *   下次访问服务端时，会遍历客户端的所有cookie对象，根据上回写如的key信息，找到value值，并设置到相应的input中。
+
+*   **常用API**
+
+| public Cookie(String name, String value) | Cookie 的构造方法，参数 name 用于指定 Cookie 的名称，value 用于指定 Cookie 的值，类似一种 map 结构 |
+| :--- | :--- |
+| String getValue() | 用于获取 Cookie 的值 |
+| String getName() | 用于获取 Cookie 的名称 |
+| void setValue(String newValue) | 用于设置 Cookie 的值 |
+| void setMaxAge(int expiry) | 用于设置 cookie 在浏览器上保持有效的秒数 |
+| void setPath(String uri) | 用于设置 cookie 的有效路径 |
+
+#### 例：登录界面免输入用户名和密码
+
+**1）新建Web 工程后，修改项目名称为“/chap10”**
+
+**2）login.jsp：在页面中直接获取cookie对象，初始为空**
+
+```html
+<body>
+<%
+    String username="";
+    String password="";
+    Cookie[] cookies=request.getCookies(); //获取客户端自动发送的所有 Cookie 对象
+    if(cookies!=null && cookies.length>0){
+        for(int i=0;i<cookies.length;i++) { // 循环遍历所有 Cookie 对象
+            // 获取名字为username 的 Cookie 的值
+            if("username".equals(cookies[i].getName())){
+                username=cookies[i].getValue();
+            // 获取名字为password 的 Cookie 的值
+            }else if("password".equals(cookies[i].getName())){
+                password=cookies[i].getValue();
+            }
+        }
+    }
+%>
+```
+
+**3）利用 servlet 向客户端写入 cookie**
+
+```java
+@WebServlet(name = "LoginServlet", urlPatterns = "/login")
+public class LoginServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        //模拟登录
+        if ("jason".equals(username) && "123".equals(password)) {
+            //成功，则创建 Cookie 对象
+            Cookie uCookie = new Cookie("username", username);
+            Cookie pCookie = new Cookie("password", password);
+            // 设置 Cookie 有效时间为1个月，此后失效
+            uCookie.setMaxAge(60*60*24*30);
+            pCookie.setMaxAge(60*60*24*30);
+            /** 设置 cookie 路径（服务器根目录），本项目中只有 URL 包含“/chap10”的请求才会自动发送
+            以下 Cookie 对象*/
+            uCookie.setPath(request.getContextPath());
+            pCookie.setPath(request.getContextPath());
+            // 写入客户端
+            response.addCookie(uCookie);
+            response.addCookie(pCookie);
+            request.getRequestDispatcher("welcome.jsp").forward(request,response);
+        }else {
+            response.sendRedirect("login.jsp");
+        }
+    }
+}
+```
+
+**4）再次访问login.jsp页面，观察 cookie 信息**
+
+（此处需结合幻灯片中的图片讲解：展示浏览器开发者工具（Application -> Cookies）中查看到的 cookie 信息，包含 username 和 password。）
+
+### SESSION
+
+#### SESSION概述
+
+*   **与 Cookie 技术不同的是，Session 技术是一种将会话数据保存到服务端的技术**
+*   **用户第一次访问服务器的时候自动创建，直到关闭浏览器时销毁，这期间用户与服务器之 间的所有请求和响应都共享一个 Session**
+
+（此处需结合幻灯片中的图片讲解：展示Session的工作原理图。1.A请求servlet1 -> 2.为A创建session, 并分配ID -> 3.B请求servlet1 -> 4.为B创建session, 并分配ID -> 5.响应：SessionID以cookie的形式式各自写回客户端 -> 6.A请求servlet2, 携带Cookie对象:JSESSIONID=110 -> 7.为A查找到ID为110的session对象 -> 8.B请求servlet2 -> 9.为B查找到ID为119的session对象。）
+
+#### 对比COOKIE
+
+*   **存放位置不同：** cookie 数据存放在客户端（浏览器）；session 数据一般存放在服务 器端的内存中，但是 SessionID 存储在客户端 cookie
+*   **cookie 由浏览器存储在本地，安全有风险，不宜存储敏感信息，如账号密码等。**
+*   **session 会在一定时间内保存在服务器上，访问较多时，影响服务器性能**
+
+#### 案例
+
+*   **Session 的常用 API 方法**
+*   Session 是 与每个请求消息紧密相关的，为此，HttpServletRequest 类中定义了用于获取 Session 对象的 API
+
+    `public HttpSession getSession()`
+
+**表 10-2 HttpSession 常用 API**
+
+| 方法声明 | 功能描述 |
+| :--- | :--- |
+| String getId() | 用于返回与当前 HttpSession 对象关联的会话 ID |
+| void setAttribute(String name, Object value) | 用于将一个对象与一个名称关联后存储到当前 HttpSession 对象中 |
+| String getAttribute() | 用于从当前 HttpSession 对象中返回指定名称的属性对象 |
+| void removeAttribute() | 用于从当前 HttpSession 对象中删除指定名称的属性 |
+| void setMaxInactiveInterval(int interval) | 用于设置当前 HttpSession 对象超时时间间隔时间 |
+| boolean isNew() | 判断当前 HttpSession 对象是否是新创建的 |
+
+#### 例10-1 实现添加产品到购物车、查看购物车等功能
+
+**实现思路：** 首先获取商品列表数据并显示到页面上，用户可以发送多次请求将所需要的商品添加到购物车中，可以用一个 Map 结构来封装购物车对象，并添加相应的 API 实现 购物车的添加产品功能。查看购物车时显示所有已添加的产品，这里需要用 Session 对象来存取会话范围内的数据
+
+**（1）准备测试数据：在 dao 层创建 EProductDB类**
+
+```java
+public class EProductDB {
+    private static Map<String,EProduct> productsMap = new HashMap<>();
+    static {
+        //模拟数据
+        EProduct p1 = new EProduct("1001", "CHERRY 键盘", 698.0f, 100, 1);
+        EProduct p2 = new EProduct("1002", "MAC 电脑", 13998.0f, 500, 1);
+        EProduct p3 = new EProduct("1003", "SIEMENS 洗衣机", 9900.0f, 200, 1);
+        EProduct p4 = new EProduct("1004", "GREE 空调", 5500.0f, 80, 1);
+        EProduct p5 = new EProduct("1005", "HUAWEI 手机", 3800.0f, 300, 1);
+        EProduct p6 = new EProduct("1006", "DELL 服务器", 50000.0f, 200, 1);
+        //2.将商品放到 map 集合中
+        productsMap.put(p1.getPid(), p1);
+        productsMap.put(p2.getPid(), p2);
+        productsMap.put(p3.getPid(), p3);
+        productsMap.put(p4.getPid(), p4);
+        productsMap.put(p5.getPid(), p5);
+        productsMap.put(p6.getPid(), p6);
+    }
+    // 获取所有产品集合
+    public static Collection<EProduct> getEProducts() {
+        return productsMap.values();
+    }
+    // 对外提供2方法
+    // 根据产品 ID 获取产品
+    public static EProduct getEProduct(String id) {
+        return productsMap.get(id);
+    }
+}
+```
+
+**（2）将测试数据显示到 list.jsp 页面，具体如下**
+
+```html
+<table border="1">
+    <tr>
+        <td>商品 id</td><td>商品名称</td><td>商品单价</td><td>商品库存</td><td>是否购买</td>
+    </tr>
+    <%
+        // 获取测试数据
+        Collection<EProduct> products = EProductDB.getEProducts();
+        // 在表格中循环显示各个测试数据
+        for (EProduct p : products) {
+    %>
+        <tr>
+            <td><%= p.getPid() %></td>
+            <td><%= p.getPname() %></td>
+            <td><%= p.getPrice() %></td>
+            <td><%= p.getQuantity() %></td>
+            <td>
+                <a href="<%= request.getContextPath() %>/cartAdd?pid=<%= p.getPid() %>">加入购物车</a>
+            </td>
+        </tr>
+    <%
+        }
+    %>
+</table>
+```
+
+（此处需结合幻灯片中的图片讲解：展示商品列表页面的表格效果，包含商品ID、名称、单价、库存和加入购物车的链接。）
+
+**（3）创建购物车容器类 Car，该类用于封装购物车的基本功能**
+
+```java
+public class Cart {
+    // 底层为 map 结构
+    private Map<String,EProduct> maps;
+    public Cart() {
+        maps=new HashMap<>();
+    }
+
+    // 添加产品到购物车
+    public void add(EProduct p){
+        if (maps.get(p.getPid()) == null) {
+            maps.put(p.getPid(), p);
+        }else {
+            EProduct product = maps.get(p.getPid());
+            product.setpNums(product.getpNums() + 1); // 购买数量加 1
+            maps.put(p.getPid(), product);
+        }
+    }
+    
+    public Map<String, EProduct> getMaps() {
+        return maps;
+    }
+    
+    public void setMaps(Map<String, EProduct> maps) {
+        this.maps = maps;
+    }
+}
+```
+
+**（4）在图 9-5 中点击“加入购物车”超链接，会发送请求到以“/cartAdd”为 URL 路 径的 Servlet 处理**
+
+```java
+@WebServlet(name = "CartAddServlet", urlPatterns = "/cartAdd")
+public class CartAddServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String pid = request.getParameter("pid");
+        EProduct product = EProductDB.getEProduct(pid);
+        
+        // 获取 HttpSession 对象
+        HttpSession session = request.getSession();
+        // 获取购物车对象
+        Cart cart = (Cart) session.getAttribute("cart");
+        if (cart == null) {
+            cart = new Cart(); //如果 cart 为 null 表示首次使用，需创建
+        }
+        cart.add(product); //添加对应产品到购物车
+        session.setAttribute("cart", cart);
+        response.sendRedirect("addSuc.jsp");
+    }
+}
+```
+
+**（5）创建 cartShow.jsp 页面，显示购购物车数据**
+
+```html
+<body>
+<%
+    Cart cart = (Cart)(session.getAttribute("cart"));
+    if (cart == null) {
+%>
+    <h2>购物车为空，请<a href="list.jsp">返回</a>添加商品</h2>
+<%
+    } else {
+        //获取所有产品
+        Collection<EProduct> products = cart.getMaps().values();
+%>
+<table border="1">
+    <tr>
+        <td>商品 id</td><td>商品名称</td><td>商品单价</td><td>购买数量</td>
+    </tr>
+<%
+        for (EProduct p : products) {
+%>
+    <tr>
+        <td><%= p.getPid() %></td>
+        <td><%= p.getPname() %></td>
+        <td><%= p.getPrice() %></td>
+        <td><%= p.getpNums() %></td>
+    </tr>
+<%
+        }
+    }
+%>
+</table>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：
+1.  展示“购物车为空，请返回添加商品”的页面效果。
+2.  展示购物车有商品时的表格效果，显示商品ID、名称、单价和购买数量。）
+
+#### 例10-2：使用 session 对象实现用户登录、注销和内部页面的访问功能
+
+**实现思路：** 用户使用正确的用户名（假设为 jason）、密码登录成功后，请求重定向到欢 迎页面 welcome.jsp，欢迎页面能够显示该用户的用户名信息。由于上述过程客户端发送了多次请求，不能使用 request 对象传递数据，因此需要在登录成功后在 session 对象中保存该 用户的信息，从而使得 welcome.jsp 页面能够动态获取用户名。另外，内部页面表示只有成功登录后才有权限访问的页面，该功能只需在访问内部页面时先判断 session 对象中有无用 户信息即可。
+
+**（1）登录页面 login.jsp 同例10-1**
+
+**（2）向 LoginServlet 中的 doPost()方法中添加**
+
+```java
+if ("jason".equals(username) && "123".equals(password)) {
+    // ...
+    HttpSession session = request.getSession();
+    session.setAttribute("username", username);
+    response.sendRedirect("welcome.jsp");
+    // ...
+}
+```
+
+**（3）修改 welcome.jsp 代码**
+
+```html
+<body>
+    <h1>登录成功，欢迎您，<%= session.getAttribute("username") %>!</h1>
+    <a href="<%= request.getContextPath() %>/logout">注销 </a>
+    <div>
+        这是页面主内容。
+    </div>
+</body>
+```
+
+**在登录页面输入正确的用户名和密码，跳转到 welcome.jsp 页面**
+
+（此处需结合幻灯片中的图片讲解：展示欢迎页面，显示“登录成功，欢迎您，jason!” 以及注销链接。）
+
+**（4）注销用户**
+
+```java
+@WebServlet(name = "LogoutServlet", urlPatterns = "/logout")
+public class LogoutServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        session.invalidate(); //注销 session
+        response.sendRedirect("/login.jsp");
+    }
+}
+```
+
+**另外一种比较通用的设置 session 失效时间的方法，是在项目的 web.xml 中配置：**
+
+```xml
+<session-config>
+    <session-timeout>30</session-timeout>
+</session-config>
+```
+
+**（5）在内部页面上添加 session 控制**
+
+**inner.jsp**
+
+```html
+<body>
+<%
+    String username = (String) session.getAttribute("username");
+    if (username == null) {
+        response.sendRedirect("login.jsp");
+    }
+%>
+    <h2>内部资料，请欣赏！</h2>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示访问内部页面显示的“内部资料，请欣赏！”内容。）
+
+#### 总结
+
+*   **Session对象（常用）**
+    *   理解含义和作用
+*   **Cookie对象**
+    *   注意与Session对象的区别
+
+## 第11章 EL和JSTL标签
+
+### 概述
+
+*   **使用 JSP 技术做开发，为了获取域对象中存储的数据通常需要将 JSP 脚本和 HTML 标签混合使用，这样做会使 JSP 页面混乱、难以维护。为此，JSP2.0 规范中提供了 EL 表达式 和 JSTL 标签来对 JSP 页面进行优化**
+
+### EL表达式
+
+#### 概述
+
+*   EL 表达式主要用于在页面显示数据
+*   简单、便于维护
+*   语法：`${ expr }`
+*   **入门案例：从 Session 的范围中，取得 user 对象的 username**
+
+    *   **使用JSP表达式**
+
+```html
+User user = (User)session.getAttribute("user");
+<h2>欢迎您，<%= user.getUserName() %></h2>
+```
+
+    *   **使用EL表达式：**
+
+```html
+${sessionScope.user.username}
+
+${sessionScope["user"]["username"]}
+```
+
+#### `.` VS `[]`
+
+*   **除了`.`操作符，EL还可以使用`[]`操作符**
+*   **如 `requestScope[“scope”]`**
+*   **一般两者都可替代，遇到特殊情况要注意**
+    *   当属性名包含了特殊字符如“.”或“-”等的情况下
+        `requestScope.user.user-Name` (错误)
+        `requestScope.user["user-Name"]` (正确)
+    *   “`[]`”操作符中可以使用变量实现动态访问
+        一般配合JSTL标签使用，详见JSTL标签部分
+
+#### EL 表达式的作用域对象
+
+**EL 表达式分别提供了 4 种作用域访问对象来实现数据的读取**
+
+**表 11-1 EL 的作用域访问对象**
+
+| 名称 | 说明 |
+| :--- | :--- |
+| pageScope | 与 pageContext 对象相关联，主要用于获取页面范围內的数据 |
+| requestScope | 与 request 对象相关联，主要用于获取请求范围內的数据 |
+| sessionScope | 与 session 对象相关联，主要用于获取会话范围內的数据 |
+| applicationScope | 与 application 对象相关联，主要用于获取应用程序范围內的数据 |
+
+**如果程序中未指定查找范围，那么系统会自动按照 page->request->session->application 的顺序进行查找**
+
+**elScope.jsp**
+
+```html
+<body>
+    <%pageContext.setAttribute("username", "班主任");%>
+    <%request.setAttribute("username", "教导主任");%>
+    <%session.setAttribute("username", "校长");%>
+    <%application.setAttribute("username", "教育部长");%>
+    指定范围的情况：<br>
+    ======${pageScope.username} <br>
+    ======${requestScope.username} <br>
+    ======${sessionScope.username} <br>
+    ======${applicationScope.username} <br>
+    不指定范围的情况：<br>
+    ======${username}:
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器输出结果，显示各作用域对应的值，以及不指定范围时默认获取的优先级最高的值）
+
+#### EL 中其它内置对象
+
+*   **EL 中还存在其它常用的内置对象**
+
+**表 11-2 EL 其它内置对象**
+
+| 内置对象 | 功能描述 |
+| :--- | :--- |
+| param | 用来获取特定属性的请求参数，例如：`${param.name}` 等价于 `request.getParameter(String name)` |
+| paramValues | 用来获取特定属性的所有参数值，例如：`${paramValues.name}` 等价于 `request.getParameterValues(String name)` |
+| header | 用来获取特定 HTTP 请求的头字段信息，例如：`${header["User-Agent"]}`表示获取用户的浏览器版本本信息 |
+| headerValues | 用来获取特定 HTTP 请求的头字段信息，该头字段可能包含多个不同的值 |
+| cookies | 用来获取客户端的 Cookie 信息 |
+
+**例 11.2： EL 其它内置对象**
+
+**regist.jsp**
+
+```html
+<body>
+    <form action="doReg.jsp" method="post">
+        用户名: <input type="text" name="username"><br>
+        性别: <input type="radio" name="sex" value="男">男
+              <input type="radio" name="sex" value="女">女 <br>
+        爱好: <input type="checkbox" name="like" value="体育">体育
+              <input type="checkbox" name="like" value="音乐">音乐
+              <input type="checkbox" name="like" value="美术">美术
+        <br>
+        <input type="submit" value="提交"><input type="reset" value="重填">
+    </form>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示注册表单页面，包含用户名输入框、性别单选框、爱好复选框及提交按钮）
+
+**doReg.jsp**
+
+```html
+<body>
+    <%request.setCharacterEncoding("UTF-8");%>
+    用户名: ${param.username} <br>
+    性别: ${param.sex} <br>
+    爱好: ${paramValues.like[0]} <br>
+    浏览器信息: ${header["User-Agent"]} <br>
+    编码信息: ${headerValues["Accept-Encoding"][0]}<br>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示doReg.jsp页面的运行结果，显示了提交的用户名、性别、选中的第一个爱好、浏览器信息以及编码信息）
+
+### JSTL标签
+
+#### 概述
+
+*   **使用 EL 表达式已经实现了页面输出的优化，但 EL 表达式无法实现逻辑处理，如循环、 条件判断等**
+*   **JSTL（Java Server Pages Standard Tag Library， JSP 标准标签库）包含了在开发 JSP 时经常使用的标准标签，这些标签提供了一种不用嵌套 Java 代码就可以实现复杂JSP 开发的途径**
+*   **要想在 JSP 页面中使用 JSTL 标签，必须完成以下几项准备工作**
+    *   下载 JSTL 所需的 jstl.jar 和 standard.jar 等 jar 包
+    *   在 JSP 页面中添加标签指令，指令代码如下（prefix 可修改）
+
+```html
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+```
+
+上述代码中 uri 的值 `http://java.sun.com/jsp/jstl/core` 表示 JSTL 的核心标签库；prefix 属性表示标签库的缩写（一般设值为“c”，也可指定其它的值
+
+#### 常用 JSTL 标签
+
+| 标签 | 说明 |
+| :--- | :--- |
+| `<c:out />` | 输出文本内容到 out 对象，常用于显示特殊字符 |
+| `<c:set />` | 在作用域中设置变量或对象属性的值 |
+| `<c:remove />` | 在作用域中移除变量的值 |
+| `<c:if />` | 实现 if 条件判断结构 |
+| `<c:choose />` | 须结合`<c:when>`和`<c:otherwise>`，实现 switch-case 结构 |
+| `<c:forEach />` | 实现循环结构 |
+| `<fmt:formatDate />` | 格式化时间 |
+
+#### `<C:OUT>`标签
+
+**`<c:out>`标签,语法如下：**
+
+`<c:out value=”value” default=”default” escapeXml=”true|false” />`
+
+其中，value 表示需要输出显示的表达式，default 表示默认输出显示的值，excapeXml 表示是否对输出的内容进行转义
+
+```html
+<body>
+    <%
+        String items[] = new String[2];
+        items[0] = "JSTL OUT 标签测试";
+        items[1] = "<h2>有 HTML 标记的内容</h2>";
+        request.setAttribute("items", items);
+    %>
+    输出默认值: <c:out value="${b}" default="JSTL OUT" /> <br>
+    Item0: <c:out value="${items[0]}">JSTL OUT 标签</c:out> <br>
+    Item1 (转义) :<c:out value="${items[1]}" /> <br>
+    Item1 (不转义) <c:out value="${items[1]}" escapeXml="false"/> <br>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器输出结果，Item1转义时显示标签源码，不转义时解析HTML标签显示粗体文字）
+
+#### `<C:SET>`和`<C:REMOVE>`
+
+**`<c:set>`标签是用来在某个范围（request、session 或者 application）内设置某个对象的**
+
+`<c:set var=”name” value=”value” [scope=”page|request|session|application”] />`
+
+**`<c:remove>`标签用于删除作用域范围内的变量，其语法格式如下**
+
+`<c:remove var=”name” [scope=”page|request|session|application”] />`
+
+```html
+<body>
+    <c:set var="var" value="page 变量" scope="page" />
+    <c:set var="var" value="request 变量" scope="request" />
+    <c:set var="var" value="session 变量" scope="session" />
+    <c:remove var="var" scope="page" />
+    <c:out value="${pageScope.var}" default="默认变量"/> <br>
+    <c:out value="${requestScope.var}"/> <br>
+    <c:out value="${sessionScope.var}"/> <br>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器输出结果，pageScope显示默认变量，requestScope和sessionScope显示设置的值）
+
+#### `<C:IF>`
+
+*   **`<c:if>`条件标签可以用来替代 Java 中的 if 语句**
+
+`<c:if test=”condition” var=”var” [scope=”page|request|session|application”] />`
+
+```html
+<body>
+    <%
+        User user = new User(1, "jason", "123", "jason@gmail.com");
+        request.setAttribute("user", user);
+        request.setAttribute("number", 4);
+    %>
+    <c:if test="${not empty user}">遍历集合</c:if>
+    <c:if test="${number mod 2 == 0}">${number}是偶数</c:if>
+</body>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器输出结果，“遍历集合”和“4是偶数”）
+
+#### `<C:CHOOSE>`标签
+
+*   **使用<c:if>标签不能表达 if-else 逻辑结构，因此 JSTL 核心标签库提供了`<c:choose>`标签，该标签必须与`<c:when>`和`<c:otherwise>`一起使用**
+
+```html
+<body>
+    <%
+        session.setAttribute("username", "jason");
+    %>
+    <c:choose>
+        <c:when test="${empty sessionScope.username}">
+            <h2>请先登录</h2>
+        </c:when>
+        <c:otherwise>请欣赏！</c:otherwise>
+    </c:choose>
+</body>
+```
+
+#### `<C:FOREACH>`标签
+
+*   **core 标签库提供了一个<c:forEach>标签专门用于迭代集合对象，如 Set、List、 Map 等**
+
+`<c:forEach var=”var” items=”items” varStatus=”status”`
+
+**items 表示要迭代的集合对象的名称，var 表示迭代过程中当前元素的名称，varStatus 表示当前循环的状态变量**
+
+```html
+<body>
+    <%
+        List<String> list = new ArrayList<>();
+        list.add("aaa");
+        list.add("bbb");
+        list.add("ccc");
+        request.setAttribute("list", list);
+    %>
+    <c:forEach items="${list}" var="str" varStatus="s">
+        ${s.index} ${s.count} ${str} <br>
+    </c:forEach>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器输出结果，显示列表元素的索引、计数和值）
+
+#### `<FMT:FORMATDATE />`
+
+**可以使用格式化标签`<fmt:formatDate>`来格式化展示日期**
+
+`<fmt:formatDate value=”date” pattern=”yyyy-MM-dd HH:mm:ss”>`
+
+**其中，value 表示时间对象，pattern 表示日期显示格式**
+
+```html
+<%
+    Date date = new Date();
+    pageContext.setAttribute("date", date);
+%>
+<span >发布时间: <fmt:formatDate value="${pageScope.date}" pattern="yyyy 年 MM 月 dd 日" /> <br>
+<span >发布时间: <fmt:formatDate value="${pageScope.date}" pattern="yyyy 年 MM 月 dd 日 HH 点 mm 分 ss 秒" /> <br>
+```
+
+（此处需结合幻灯片中的图片讲解：展示浏览器输出结果，显示两种不同格式的发布时间）
+
+### 总结
+
+*   **EL表达式取值**
+*   **JSTL条件标签、循环标签**
+
+
+## 第12章 过滤器和监听器
+
+### 过滤器
+
+#### FILTER简介
+
+*   **当一个应用程序中有很多页面都需要进行相同功能的显示控制时，使用过滤器则可以极大地提高控制效果，同时也降低了开发成本，提高了工作效率。**
+*   **过滤器（Filter）的基本功能就是可以动态地拦截请求和响应，从而在执行目标 Servlet 的业务代码前后处理或实现一些特殊的功能**
+
+（此处需结合幻灯片中的图片讲解：展示过滤器处理前后请求发送至Web资源以及Web资源响应时的过滤流程图）
+
+#### FILTER类
+
+*   **本质上是一个实现了 javax.servlet.Filter 接口的类，该接口中定义了三个方法**
+
+**表 12-1 Filter 常见方法**
+
+| 方法声明 | 功能描述 |
+| :--- | :--- |
+| `Init(FliterConfig config)` | 该方法用来初始化过滤器，FilterConfig 对象用于读取初始化参数信息 |
+| `doFilter(ServletRequest request, ServletResponse response, FilterChain chain)` | doFilter 方法被 Servlet 容器调用，同时传入分别指向这个请求/响应链中的 ServletRequest、ServletResponse 和 FilterChain 对象的引用，该方法主要用来处理客户端请求，并将处理任务传递给链中的下一个资源(通过调用 Filter Chain 对象引用的 doFilter 方法) |
+| `destroy()` | 容器在垃圾收集之前调用 destroy()方法，以便能够执行任何必需的清理代码 |
+
+#### 过滤器的基本使用
+
+*   **在 IDEA 中创建新的 Web 工程 bookChapter12，在 src 目录下创建 filter 包，并在该包下创建 FirstFilter 过滤器**
+
+```java
+@WebFilter(filterName = "FirstFilter", urlPatterns = "/*",
+    initParams={
+        @WebInitParam(name="ok", value="initParam1"),
+        @WebInitParam(name="error", value="initParam2")
+    } )
+public class FirstFilter implements Filter {
+    public void destroy() {
+        System.out.println("过滤器销毁。。");
+    }
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        System.out.println("到达目标资源前先经过这里");
+        chain.doFilter(req, resp); // 将请求发送到下一个资源
+        System.out.println("返回响应前先经过这里");
+    }
+    public void init(FilterConfig config) throws ServletException {
+        String p1 = config.getInitParameter("ok");
+        String p2 = config.getInitParameter("error");
+        System.out.println(p1 + "====" + p2);
+    }
+}
+```
+
+*   **2）创建 TestFilterServlet 程序测试上述过滤器**
+
+```java
+@WebServlet(name = "FilterTestServlet", urlPatterns = "/test")
+public class FilterTestServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        System.out.println("目标资源代码执行中。。。");
+    }
+}
+```
+
+**启动 Tomcat 服务器，在浏览器中输入 URL 地址 http://localhost:8080/chap12/test**
+
+（此处需结合幻灯片中的图片讲解：展示控制台输出日志，显示过滤器初始化参数、到达目标资源前的日志、目标资源执行日志以及返回响应前的日志顺序）
+
+#### FILTER 的分类
+
+*   **根据 HTTP 请求资源方式的不同，过滤器可分成不同的类别**
+
+**表 12-2 过滤器分类表**
+
+| 类型 | 作用 |
+| :--- | :--- |
+| REQUEST | 默认值，浏览器直接请求资源 |
+| FORWARD | 服务端转发访问资源 |
+| INCLUDE | 包含访问资源 |
+| ERROR | 错误跳转资源 |
+| ASYNC | 异步访问资源 |
+
+没有配置其类型，默认属于 REQUEST 类型的过滤器。可以通过 `@WebFilter` 注解的 `dispatcherTypes`属性配置过滤器的类型
+
+#### ForwardFilter.java
+
+```java
+@WebFilter(filterName = "ForwardFilter",urlPatterns = "/*",
+        dispatcherTypes = DispatcherType.FORWARD)
+public class ForwardFilter implements Filter {
+    //省略 destory()方法
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        System.out.println("Forward 类型过滤器拦截请求");
+        chain.doFilter(req, resp);
+        System.out.println("Forward 类型过滤器拦截响应");
+    }
+    //省略 init()方法
+}
+```
+
+**上述过滤器只会拦截服务端转发的请求，而不会拦截客户端直接发送的请求**
+
+#### ForwordFilterServlet.java
+
+```java
+@WebServlet(name = "ForwordFilterServlet",urlPatterns = "/forward")
+public class ForwordFilterServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.getRequestDispatcher("test.jsp").forward(request, response);
+    }
+}
+```
+
+**在地址栏输入 URL 地址 http://localhost:8080/chap12/forward**
+
+（此处需结合幻灯片中的图片讲解：展示控制台日志，显示Forward类型过滤器成功拦截了请求和响应）
+
+#### 主要用途1
+
+*   **统一处理中文乱码**
+
+```java
+@WebFilter(filterName="encoding",urlPatterns="/*")
+public class EncodingFilter implements Filter{
+```
+
+```java
+@Override
+public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException {
+    // TODO Auto-generated method stub
+    request.setCharacterEncoding("utf-8");
+    response.setCharacterEncoding("utf-8");
+    response.setContentType("text/html;charset=UTF-8");
+    
+    System.out.println("我是encoding过滤器");
+    
+    chain.doFilter(request, response);
+}
+```
+
+#### FILTER 链
+
+*   **Web 应用程序中可以注册多个 Filter 程序，每一个 Filter 程序都可以针对某一个URL 进行拦截。如果多个 Filter 程序都对同一个 URL 进行拦截，那么这些 Filter 就会组成一个 Filter 链**
+
+（此处需结合幻灯片中的图片讲解：展示图 12-4 过滤器链原理图，描述用户请求经过Filter1、Filter2到达Web资源，再反向经过Filter2、Filter1返回的过程）
+
+#### 过滤器先后顺序的问题
+
+*   **注解配置：** 按照类名的字符串比较规则比较，值小的先执行，如 AFilter 和 BFilter， 由于在字母表中字母 A 排在字母 B 前面，因此 AFilter 就先执行
+*   **web.xml 配置：** 根据定义的元素位置排序，定义在上面的先执行
+
+将例 12.2 中 ForwardFilter 的 DispatcherType 改成 REQUEST，同时打开 FirstFilter。
+
+（此处需结合幻灯片中的图片讲解：展示控制台日志，验证过滤器的执行顺序）
+
+#### 应用案例
+
+###### 统一解决中文乱码
+
+```java
+@WebFilter(filterName = "EncodingFilter", urlPatterns = "/*")
+public class EncodingFilter implements Filter {
+    // 省略 destroy() 和 init() 方法
+    
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        HttpServletRequest request = (HttpServletRequest)req;
+        HttpServletResponse response = (HttpServletResponse)resp;
+        //在放行之前处理编码
+        request.setCharacterEncoding("utf-8");
+        response.setHeader("content-type" , "text/html;charset=utf-8");
+        chain.doFilter(request, response);
+    }
+}
+```
+
+###### 统一解决用户登录后访问内部页面问题
+
+**LoginFilter.java**
+
+```java
+@WebFilter(filterName = "LoginFilter",urlPatterns = "/*")
+public class LoginFilter implements Filter {
+    // 省略 destroy() 和 init() 方法
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+        HttpSession session = request.getSession();
+        String username = (String) session.getAttribute("username");
+        // 判断如果没有取到用户信息,就跳转到登陆页面
+        if (username == null || "".equals(username)) {
+            // 转发到登陆页面
+            request.getRequestDispatcher("login.jsp").forward(request,response);
+        }
+        else {
+            // 已经登陆，放行
+            chain.doFilter(request,response);
+        }
+    }
+}
+```
+
+### 监听器
+
+#### 监听器概述
+
+*   **本质上 Servlet 事件监听器就是一个实现特定接口的 Java 程序，专门用于监听Web 应用程序中 ServletContext、HttpSession 和 ServletRequest 等域对象的创建和销毁过程，以及监听这些域对象属性的修改。根据监听事件的不同可以将其分成三类**
+    *   用于监听域对象创建和销毁的事件监听器
+    *   用于监听域对象中属性变更的事件监听器
+    *   用于监听绑定 HttpSession 域中某个对象状态的事件监听器
+
+**上述三类监听事件都定义了相应的接口，在编写事件监听器程序时只需实现对应的接口 就可以实现监听功能**
+
+#### 8 大监听器接口
+
+*   **开发中监听事件主要对应 8 个监听器接口**
+
+| 监听器接口 | 功能描述 |
+| :--- | :--- |
+| ServletContextListener | 类别（1），实现该接口可以在 ServletContext 对象初始化或者销毁时得到通知 |
+| HttpSessionListener | 类别（1），实现该接口可以在 HttpSession 对象创建或失效前得到通知 |
+| ServletRequestListener | 类别（1），实现该接口可以在 ServletRequest 对象创建或销毁前得到通知 |
+| ServletContextAttributeListener | 类别（2），实现该接口可以在 ServletContext 对象的属性列表发生变化时得到通知 |
+| ServletRequestAttributeListener | 类别（2），实现该接口可以在 ServletRequest 对象的属性列表发生变化时得到通知 |
+| HttpSessionAttributeListener | 类别（2），实现该接口可以在 HttpSession 对象的属性列表发生变化时得到通知 |
+| HttpSessionBindingListener | 类别（3），实现该接口可以使一个对象在 session 或者从 session 中删除时得到通知 |
+| HttpSessionActivationListener | 类别（3），实现该接口的对象如果绑定到 session 中，当 session 被钝化或者激活时，Servlet 容器通知该对象 |
+
+#### 监听域对象创建和销毁的事件监听器
+
+*   **ServletContext 监控：对应监控 application 内置对象象的创建和销毁**
+
+**MyContextListener.java**
+
+```java
+@WebListener()
+public class MyContextListener implements ServletContextListener{
+    public void contextInitialized(ServletContextEvent sce) {
+        System.out.println("Web 容器启动时，调用此方法");
+    }
+    public void contextDestroyed(ServletContextEvent sce) {
+        System.out.println("Web 容器关闭时，调用此方法");
+    }
+}
+```
+
+上述代码使得当 web 容器启动时，执行 contextInitialized()方法；当容器关闭或重启时， 执行 contextDestroyed()方法。该监听事件主要在启动 Web 应用时初始化配置信息，或者是 在关闭 Web 应用时需要回收一些资源时使用。
+
+#### HTTPSESSION 监控
+
+**MySessionListener.java**
+
+```java
+@WebListener()
+public class MySessionListener implements HttpSessionListener {
+    public void sessionCreated(HttpSessionEvent se) {
+        /* Session is created. */
+        System.out.println("Session 对象创建时调用该方法");
+    }
+    public void sessionDestroyed(HttpSessionEvent se) {
+        /* Session is destroyed. */
+        System.out.println("Session 对象销毁时调用该方法");
+    }
+}
+```
+
+上述代码使得当一个用户访问网站时容器就会创建一个 HttpSession 对象，从而调用 sessionCreated()方法，当用户离开网站时容器就会销毁一个 HttpSession 对象，从而自动调用 sessionDestroyed()方法。该特性可用于统计站点当前在线人数
+
+###### 例 12.5：统计当前在线人数
+
+该监听器中还需要有 一个 ServletContext 域对象范围的变量来记录总人数
+
+```java
+@WebListener()
+public class CountUserListener implements HttpSessionListener{
+    private int count = 0; // 用于统计在线人数
+    public void sessionCreated(HttpSessionEvent se) {
+        count++;
+        se.getSession().getServletContext().setAttribute("count", count);
+    }
+    public void sessionDestroyed(HttpSessionEvent se) {
+        count--;
+        se.getSession().getServletContext().setAttribute("count", count);
+    }
+}
+```
+
+**count.jsp**
+
+```html
+<body>
+    当前人数为: ${applicationScope.count} <br>
+    <a href="${pageContext.request.contextPath}/logout">退出登录</a>
+</body>
+```
+
+可以通过打开不同浏览器来模拟多用户多会话的场景，以不同浏览器 连续访问该页面 3 次
+
+（此处需结合幻灯片中的图片讲解：展示浏览器访问count.jsp页面，显示当前在线人数统计的效果）
+
+#### SERVLETREQUEST监听
+
+**MyRequestListener.java**
+
+```java
+@WebListener()
+public class MyRequestListener implements ServletRequestListener {
+    @Override
+    public void requestDestroyed(ServletRequestEvent servletRequestEvent) {
+        System.out.println("销毁 request 请求时，调用该方法");
+    }
+    @Override
+    public void requestInitialized(ServletRequestEvent servletRequestEvent) {
+        System.out.println("创建 request 请求时，调用该方法");
+    }
+}
+```
+
+#### 监听对象中属性的变更
+
+*   **监听对象属性的新增、删除和修改的监听器也可以划分成三种。分别针对于 ServletContext、HttpSession、ServletRequest 对象，容器根据传入方法参数类型的不同，而 监听不同域对象属性的变更**
+
+```java
+public class MyContextAttrListener implements ServletContextAttributeListener{
+    // application 对象中添加属性时，调用该方法
+    public void attributeAdded(ServletContextAttributeEvent hsbe) {
+        System.out.println("application 对象中添加属性 :name=" +hsbe.getName());
+    }
+    // application 对象中删除属性时，调用该方法
+    public void attributeRemoved(ServletContextAttributeEvent hsbe) {
+        System.out.println("application 对象中删除属性 :name="+hsbe.getName());
+    }
+    // application 对象中更改属性时，调用该方法
+    public void attributeReplaced(ServletContextAttributeEvent hsbe) {
+        System.out.println("application 对象中修改属性 :name="+hsbe.getName());
+    }
+}
+```
+
+**实现 HttpSessionAttributeListener接口**
+
+```java
+public class MyHttpSessionAttrListener implements HttpSessionAttributeListener{
+    // session 对象中添加属性时，调用该方法
+    public void attributeAdded(HttpSessionBindingEvent hsbe) {
+        System.out.println("session 对象中添加属性:name = "+hsbe.getName());
+    }
+    // session 对象中删除属性时，调用该方法
+    public void attributeRemoved(HttpSessionBindingEvent hsbe) {
+        System.out.println("session 对象中删除属性:name = "+hsbe.getName());
+    }
+    // session 对象中修改属性时，调用该方法
+    public void attributeReplaced(HttpSessionBindingEvent hsbe) {
+        System.out.println("session 对象中修改属性:name = "+hsbe.getName());
+    }
+}
+```
+
+**实现 ServletRequestAttributeListener接口**
+
+```java
+public class MyServletRequestAttrListener implements
+                                        ServletRequestAttributeListener{
+    // request 对象中添加属性时，调用该方法
+    public void attributeAdded(ServletRequestAttributeEvent hsbe) {
+        System.out.println("request 对象中添加属性 :name = "+hsbe.getName());
+    }
+    // request 对象中删除属性时，调用该方法
+    public void attributeRemoved(ServletRequestAttributeEvent hsbe) {
+        System.out.println("request 对象中删除属性 :name = "+hsbe.getName());
+    }
+    // request 对象中修改属性时，调用该方法
+    public void attributeReplaced(ServletRequestAttributeEvent hsbe) {
+        System.out.println("request 对象中修改属性 :name = "+hsbe.getName());
+    }
+}
+```
+
+#### 监听对象状态的事件监听器
+
+*   **Web 应用程序开发中经常使用 Session 域来存储对象，每个对象在该域中都有多种状态， 如绑定（添加）到 Session 域中、从 Session 域中解除绑定（删除）、随 Session 对象持久化 到一个存储设备中（钝化）、随 Session 域从一个存储设备中回复（激活）等状态**
+*   **Servlet API 提供了两个特殊的监听器接口 HttpSessionBindingListener 和 HttpSessionActivationListener，这两个接口专门用于监听 JavaBean 对象在 Session 域中的状态**
+
+###### HttpSessionBindingListener 接口
+
+可以通过实现 HttpSessionBindingListener 接口，监听 JavaBean 对象的绑定和解绑事件，该接口的绑定和解绑事件分别对应两个事件处理方法：valueBound()方法和 valueUnbound()方法
+
+**例 12.6： 监听某特定用户（比如“小明”）是否上线**
+
+分析：用户成功登录到站点后，一般会在 session 对象中保存用户的登录信息（用户名 或用户对象等），通过这一事件可以监听到某特定用户是否上线。
+
+**User.java**
+
+```java
+public class User implements HttpSessionBindingListener{
+    private String username;
+    private String password;
+    //...// 省略构造方法
+    @Override
+    public void valueBound(HttpSessionBindingEvent hsbe) {
+        if (this.getUsername().equals("小明")){
+            System.out.println("小明登录了，警告发出。");
+        }
+    } // this表示绑定和解绑的session对象
+    @Override
+    public void valueUnbound(HttpSessionBindingEvent hsbe) {
+        if (this.getUsername().equals("小明")){
+            System.out.println("小明下线了，警告发出。");
+        }
+    }
+    //...// 省略 get() 和 set() 方法
+}
+```
+
+**LoginServlet.java**
+
+```java
+@WebServlet(name = "LoginServlet", urlPatterns = "/login")
+public class LoginServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        if ("小明".equals(username) && "123".equals(password)) {
+            User user = new User(username, password);
+            request.getSession().setAttribute("user", user);
+            response.sendRedirect("index.jsp");
+        }else {
+            response.sendRedirect("login.jsp");
+        }
+    }
+}
+```
+
+*   黑色粗体部分，会触发 User 对象调用 valueBound()方法来处理该事件， 该方法根据 this 对象（当前绑定的用户对象）获取用户名属性来判断某特定的用户是否上线。
+*   当用户注销后会触发 User 对象调用 valueUnbound()方法从而能监听到当前用户已经离线
+
+在 login.jsp 输入用户名“小明”和密码“123”登录成功后，点击“注销”超链接，控制台 打印登录和下线信息，
+
+（此处需结合幻灯片中的图片讲解：展示控制台日志，显示session销毁及小明下线的警告信息）
+
+###### HttpSessionActivationListener接口
+
+*   HttpSession 域对象中保存大量访问网站相关的重要信息，但是过多的 session 数据会占 用过多的内存，引起服务器性能的下降。为了解决这一问题，Web 容器会将不常使用的 session 数据序列化到本地文件中，这一过程称为钝化。当需要再次访问到该 session 的内容时，就 会读取本地文件放入内存中，这个过程称为活化（激活）
+*   **为了监听 HttpSession 中对象钝化 和活化的过程，Servlet API 提供了 httpSessionActivationListener 接口，该接口定义了 sessionWillPassivate()方法和 sessionDidActivate()方法分别对应对象的钝化和活化事件处理 方法。需要注意的是，对象序列化还需要实现 Serializable 接口**
+
+**1) 创建 Employee.java 实现 Serializable 和 HttpSessionActivationListener接口**
+
+```java
+public class Employee implements HttpSessionActivationListener, Serializable {
+    private int id;
+    private String name;
+    private double salary;
+    // 省略构造方法和 get() 和 set() 方法
+    @Override
+    public void sessionWillPassivate(HttpSessionEvent httpSessionEvent) {
+        System.out.println("Employee 被钝化了");
+    }
+    @Override
+    public void sessionDidActivate(HttpSessionEvent httpSessionEvent) {
+        System.out.println("Employee 被激活了");
+    }
+}
+```
+
+上述代码中的 `sessionWillPassivate()` 和 `sessionDidActivate()` 方法分别对应对象的“钝化” 和“激活”过程。
+
+**（2）在 Tomcat 安装目录中的 context.xml文件中添加如下配置**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+    <!-- maxIdleSwap:session 中的对象多长时间不使用就钝化，单位为秒 -->
+    <!-- directory:钝化后的对象的文件写到磁盘的哪个目录下-->
+    <Manager className="org.apache.catalina.session.PersistentManager"
+        maxIdleSwap="100">
+        <Store className="org.apache.catalina.session.FileStore"
+            directory="/javaweb" />
+    </Manager>
+</Context>
+```
+
+其中 maxIdleSwap 属性用于指定 Session 被钝化前的空闲时间间隔（单位秒），这里设置 为 100 秒，directory 属性指定保存对象持久化文件的目录
+
+**3）创建 SessionActionServlet.java 构造 Employee 并添加到session对象中**
+
+```java
+@WebServlet(name = "SessionActionServlet", urlPatterns = "/active")
+public class SessionActionServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String method = request.getParameter("method");
+        if (method.equals("write")){
+            Employee emp = new Employee(1, "Jason", 9999);
+            request.getSession().setAttribute("emp", emp);
+            System.out.println("Employee 被放到 session 域中了");
+        }else if (method.equals("read")){
+            Employee emp= (Employee)(request.getSession().getAttribute("emp"));
+            System.out.println("从 session 域中读取 Employee 对象: " + emp.getName());
+        }
+    }
+}
+```
+
+在浏览器中输入 URL 地址 `http://localhost:8080/chap12/active?method=write`，过 100 秒后控制台显示
+
+（此处需结合幻灯片中的图片讲解：展示控制台日志，显示Employee被放到session中，以及Employee被钝化的信息）
+
+在浏览器中输入 URL 地址 `http://localhost:8080/chap12/active?method=read`，控制台显示
+
+（此处需结合幻灯片中的图片讲解：展示控制台日志，显示Employee被激活，以及从session中读取对象的信息）
+
+值得一提的是，IDEA 中 session 对象“钝化”的数据文件所在的目录和 Eclipse 有所不 同，读者首先可以根据 Tomcat 的启动信息，找到项目部署的目录
+
+在上述目录下的 `work\Catalina\localhost\chap12\javaweb` 下保存着 session 对象“钝化” 的数据，如
+
+（此处需结合幻灯片中的图片讲解：展示文件系统中生成的session钝化文件）
+
+#### 总结
+
+*   **过滤器的原理及其在实际开发中的应用**
+*   **监听器的原理及其在实际开发中的应用**
