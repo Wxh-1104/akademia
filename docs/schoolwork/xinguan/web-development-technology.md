@@ -2399,7 +2399,7 @@ $(function () {
     *   在请求消息中用于表示POST 请求中数据所处的位置，表示请求数据在发送到服务器之前，所有字符都会以“application/x-www-form-urlencoded”进行编码并封装在请求消息中，也就是Form Data中。
 
 *   **Host和Origin**
-    *   Host头字段用于指定请求资源所在的位置，通常包括，且仅仅包括域名和端口号。Origin用于指定请求从哪里发起的，通常包括协议名、域名和端口号，比如http://localhost:8080
+    *   Host头字段用于指定请求资源所在的位置，通常包括，且仅仅包括域名和端口号。Origin用于指定请求从哪里发起的，通常包括协议名、域名和端口号，比如 http://localhost:8080
 
 *   **Refer**
     *   浏览器向服务器发送请求，可能是直接在浏览器中输入URL 地址来发出，也可能是单击一个网页上的超链接或提交表单而发出。对于上述第一种情况，浏览器不会发送Refer 请求头，而对于第二种情况浏览器会使用Refer 头字段标识发出请求的超链接所在网页的URL
@@ -2430,7 +2430,7 @@ $(function () {
     </mime-mapping>
     ```
 
-    *   例子：在http目录下创建一个内容为空的word文件，文件名为test.doc，在地址栏输出http://localhost:8080/chap06/test.doc，此时由于服务器会告诉浏览器响应实体的MIME类型为“application/msword”，因此浏览器会以文件下载的形式处理响应消息
+    *   例子：在http目录下创建一个内容为空的word文件，文件名为test.doc，在地址栏输出 `http://localhost:8080/chap06/test.doc`，此时由于服务器会告诉浏览器响应实体的MIME类型为“application/msword”，因此浏览器会以文件下载的形式处理响应消息
 
 *   **Data和Expires**
     *   Data头字段用于表示HTTP消息产生的当前时间

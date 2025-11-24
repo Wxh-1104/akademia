@@ -187,6 +187,6 @@ export default withMermaid(
       },
     },
     cleanUrls: true,
-    ignoreDeadLinks: false,
+    ignoreDeadLinks: true,
   })
 )
