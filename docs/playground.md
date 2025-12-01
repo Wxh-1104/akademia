@@ -100,6 +100,13 @@ Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
     colorLight="#900b09"
     colorDark="#fdfcf8"
   />
+  <NavCard
+    title="Node.js"
+    description="免费、开源、跨平台的 JavaScript 运行时环境"
+    link="https://nodejs.org/zh-cn/"
+    colorLight="#417e38"
+    colorDark="#84ba64"
+  />
 </NavCardGrid>
 
 前端开发框架：
@@ -111,6 +118,27 @@ Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
     link="https://zh-hans.react.dev/"
     colorLight="rgb(8, 126, 164)"
     colorDark="rgb(88, 196, 220)"
+  />
+  <NavCard
+    title="Vue.js"
+    description="易学易用，性能出色，适用场景丰富的 Web 前端框架"
+    link="https://cn.vuejs.org/guide/"
+    colorLight="#33a06f"
+    colorDark="#42b883"
+  />
+  <NavCard
+    title="Angular"
+    description="基于 TypeScript，可用于构建可扩展的 Web 应用程序的框架"
+    link="https://angular.dev/"
+    colorLight="#f637e3"
+    colorDark="#f637e3"
+  />
+  <NavCard
+    title="Tailwind CSS"
+    description="开源 CSS 框架"
+    link="https://tailwindcss.com/"
+    colorLight="#00a6f4"
+    colorDark="#74d4ff"
   />
 </NavCardGrid>
 
