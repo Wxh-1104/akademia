@@ -1311,7 +1311,7 @@ var a = function () {...}
 
 ### 条件和循环
 
-*   语法同Java一致，，例如以下函数使用了 for 循环来在控制台打印数字 0~n-1（n 为参数）
+*   语法同Java一致，例如以下函数使用了 for 循环来在控制台打印数字 0~n-1（n 为参数）
 
 ```javascript
 function printNum(n) {
