@@ -102,6 +102,18 @@ Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
   />
 </NavCardGrid>
 
+前端开发框架：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="React"
+    description="用于构建 Web 和原生交互界面的库"
+    link="https://zh-hans.react.dev/"
+    colorLight="rgb(8, 126, 164)"
+    colorDark="rgb(88, 196, 220)"
+  />
+</NavCardGrid>
+
 AI、机器学习与深度学习相关：
 
 <NavCardGrid :columns="5">
@@ -174,6 +186,11 @@ AI、机器学习与深度学习相关：
     link="https://aibydoing.com/"
     colorLight="#ae5630"
     colorDark="#fff3cd"
+  />
+  <NavCard
+    title="LLMBook-zh"
+    description="对大语言模型的整体技术讲解"
+    link="https://llmbook-zh.github.io/"
   />
   
 </NavCardGrid>
