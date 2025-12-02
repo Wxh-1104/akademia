@@ -336,6 +336,13 @@ Rust 编程语言相关：
     colorDark="#dea584"
   />
   <NavCard
+    title="Rust 语言圣经"
+    description="从基础到项目实践，中文开源 Rust 教程"
+    link="https://course.rs/about-book.html"
+    colorLight="#eb864c"
+    colorDark="#dea584"
+  />
+  <NavCard
     title="100 Exercises"
     description="通过 100 道练习从零学习 Rust"
     link="https://rust-exercises.com/100-exercises/"
