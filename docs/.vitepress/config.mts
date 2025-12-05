@@ -77,6 +77,7 @@ export default withMermaid(
               { text: "Matrix Computations for Signal Processing翻译", link: "/tutorial/ee731-lecture-notes" },
               { text: "C++ 入门", link: "/tutorial/cpp-tutorial" },
               { text: "非对称加密与 RSA 加密算法", link: "/tutorial/rsa-algorithm" },
+              { text: "Rust 异步编程", link: "/tutorial/async-rust"},
             ]
           },
           {
