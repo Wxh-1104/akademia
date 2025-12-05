@@ -167,8 +167,8 @@ AI、机器学习与深度学习相关：
     colorDark="rgb(253, 213, 182)"
   />
   <NavCard
-    title="deepseek"
-    description="访问 deepseek（无使用限额）"
+    title="DeepSeek"
+    description="访问 DeepSeek（无使用限额）"
     link="https://chat.deepseek.com/"
     colorLight="#2563eb"
     colorDark="#a4b9e8"
@@ -313,6 +313,20 @@ Go 编程语言相关：
     title="Go 官方教程"
     description="Go 语言从零基础到进阶"
     link="https://go.dev/learn/"
+    colorLight="#007f9f"
+    colorDark="#50b7e0"
+  />
+  <NavCard
+    title="Go 语言圣经"
+    description="经典 Go 语言教材的中文翻译"
+    link="https://gopl-zh.github.io/"
+    colorLight="#007f9f"
+    colorDark="#50b7e0"
+  />
+  <NavCard
+    title="Go 指南"
+    description="互动式 Go 语言教程"
+    link="https://tour.go-zh.org/list"
     colorLight="#007f9f"
     colorDark="#50b7e0"
   />
