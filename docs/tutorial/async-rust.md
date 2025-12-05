@@ -3989,3 +3989,4436 @@ assert_eq!(*handle.lock().unwrap(), 4);
 协程使我们能够构建代码，因为它们可以作为异步和同步代码之间的接缝。通过协程，我们可以构建同步代码模块，然后使用标准测试进行评估。我们可以构建作为协程的适配器，这样我们的同步代码就可以连接到需要异步功能的代码，但这种异步功能以协程表示。然后，我们可以对协程进行单元测试，看看它们在被不同顺序和组合轮询时的行为。我们可以将这些协程注入到实现 `Future` trait 的结构体中，以便将我们的代码集成到异步运行时中，因为我们可以在未来的 `poll` 函数中调用协程。在这里，我们只需要通过接口隔离异步代码。一个异步函数可以调用你的代码，然后将输出传递给第三方异步代码，反之亦然。
 
 隔离代码的一个好方法是使用反应式编程，我们的代码单元可以通过订阅广播通道来消费数据。我们将在第6章探讨这一点。
+
+## 第六章 响应式编程  
+
+*响应式编程* 是一种编程范式，其中的代码会对数据值或事件的变化做出反应。响应式编程使我们能够构建能够实时动态响应变化的系统。必须强调的是，本章是在异步编程的语境下撰写的。我们无法涵盖响应式编程的方方面面，因为这个主题已经有专门的著作。相反，我们将重点放在通过构建一个基本的加热系统来探讨异步轮询和响应数据变化的方法，在该系统中，期物会对温度变化做出反应。然后，我们将使用原子变量、互斥锁和队列来构建一个事件总线，使我们能够向多个订阅者发布事件。
+
+通过本章的学习，你将熟悉足够多的异步数据共享概念，从而能够构建线程安全、可变的数据结构。这些数据结构可以被多个并发的异步任务安全地操作。你还将能够实现观察者模式。在本章结束时，你将掌握构建异步 Rust 解决方案的技能，以应对你在进一步阅读中会遇到的响应式设计模式。
+
+我们首先从构建一个基本的响应式系统开始我们的响应式编程之旅。
+
+### 构建一个基本的响应式系统
+
+在构建基本的响应式系统时，我们将实现观察者模式。在这个模式中，我们有**主体**（subjects），然后有**观察者**（observers）订阅该主体的更新。当主体发布更新时，观察者通常会根据其特定要求对此更新做出反应。对于我们的基本响应式系统，我们将构建一个简单的加热系统。当温度低于设定值时，系统会打开加热器，如图6-1所示。
+
+**图6-1. 我们基本的响应式加热系统**
+
+在这个系统中，温度和期望温度是主体。加热器和显示器是观察者。如果温度下降到低于期望温度设定值，我们的加热器将打开。如果温度发生变化，我们的显示器将在终端打印出温度。在实际系统中，我们会直接将系统连接到温度传感器。然而，由于我们使用这个例子来探索响应式编程，我们绕开了硬件工程的细节，直接通过编码来模拟加热器和热量损失对温度的影响。现在我们的系统已经布局好了，我们可以开始定义我们的主体了。
+
+#### 定义我们的主体
+
+系统中的观察者将是持续轮询的期物，因为它们将在整个程序中持续轮询主体，以查看主体是否发生了变化。在我们开始构建温度系统之前，我们需要以下依赖项：
+
+```toml
+[dependencies]
+tokio = { version = "1.26.0", features = ["full"] }
+clearscreen = "2.0.1"
+```
+
+我们使用 `clearscreen` 来更新系统的显示，并使用 Tokio crate 来获得一个易于使用的异步运行时接口。`LazyLock`（现已成为标准库的一部分）允许我们惰性初始化变量，意味着它们只在首次访问时创建。有了这些依赖项，我们需要以下导入来构建我们的系统：
+
+```rust
+use std::sync::Arc;
+use std::sync::atomic::{AtomicI16, AtomicBool};
+use core::sync::atomic::Ordering;
+use std::sync::LazyLock;
+use std::future::Future;
+use std::task::Poll;
+use std::pin::Pin;
+use std::task::Context;
+use std::time::{Instant, Duration};
+```
+
+现在我们已经准备好了一切，我们可以定义我们的主体：
+
+```rust
+static TEMP: LazyLock<Arc<AtomicI16>> = LazyLock::new( || {
+    Arc::new(AtomicI16::new(2090) )
+});
+
+static DESIRED_TEMP: LazyLock<Arc<AtomicI16>> = LazyLock::new( || {
+    Arc::new(AtomicI16::new(2100) )
+});
+
+static HEAT_ON: LazyLock<Arc<AtomicBool>> = LazyLock::new( || {
+    Arc::new(AtomicBool::new(false) )
+});
+```
+
+这些主体有以下职责：
+
+1.  **`TEMP`**: 系统的当前温度。
+2.  **`DESIRED_TEMP`**: 我们希望房间达到的期望温度。
+3.  **`HEAT_ON`**: 加热器是否应该打开。如果布尔值为 `true`，我们指示加热器打开。如果布尔值为 `false`，加热器将关闭。
+
+如果你之前搜索过响应式编程或响应式系统，你可能读过关于传递消息和事件的内容。消息和事件当然是响应式编程的一部分，但我们需要记住，软件开发的一个重要部分是不要过度设计我们的系统。我们的系统越复杂，维护和更改就越困难。我们的系统有基本的反馈需求：加热器根据一个数字打开或关闭。如果我们深入探究在线程间发送消息的锁和通道，它们最终可以归结为用于锁的原子变量和其他处理数据的数据集合。就目前而言，仅使用原子变量就足够了，因为系统的需求很简单。
+
+观察者订阅主体使我们的代码解耦。例如，我们可以通过让新的观察者来观察主体，轻松地增加观察者的数量。我们不必修改现有主体中的任何代码。
+
+现在我们已经为主体准备好了一切，下一步是构建一个观察者来显示我们的主体并控制我们的 `HEAT_ON` 主体。
+
+#### 构建我们的显示器观察者
+
+现在我们的主体已经定义好了，我们可以定义我们的显示器期物：
+
+```rust
+pub struct DisplayFuture {
+    pub temp_snapshot: i16,
+}
+
+impl DisplayFuture {
+    pub fn new() -> Self {
+        DisplayFuture {
+            temp_snapshot: TEMP.load(Ordering::SeqCst)
+        }
+    }
+}
+```
+
+当我们创建期物时，我们加载温度主体的值并将其存储起来。这里我们使用 `Ordering::SeqCst` 来确保温度值在所有线程中保持一致。这种严格的排序保证没有其他线程以一种我们无法察觉的方式修改了温度。
+
+然后，我们可以使用这个存储的温度来与轮询时的温度进行比较：
+
+```rust
+impl Future for DisplayFuture {
+    type Output = ();
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output>
+    {
+        let current_snapshot = TEMP.load(Ordering::SeqCst); // 1
+        let desired_temp = DESIRED_TEMP.load(Ordering::SeqCst);
+        let heat_on = HEAT_ON.load(Ordering::SeqCst);
+
+        if current_snapshot == self.temp_snapshot { // 2
+            cx.waker().wake_by_ref();
+            return Poll::Pending
+        }
+        if current_snapshot < desired_temp && heat_on == false { // 3
+            HEAT_ON.store(true, Ordering::SeqCst);
+        }
+        else if current_snapshot > desired_temp && heat_on == true { // 4
+            HEAT_ON.store(false, Ordering::SeqCst);
+        }
+        clearscreen::clear().unwrap(); // 5
+        println!("Temperature: {}\nDesired Temp: {}\nHeater On: {}", // 6
+            current_snapshot as f32 / 100.0,
+            desired_temp as f32 / 100.0,
+            heat_on);
+        self.temp_snapshot = current_snapshot; // 7
+        cx.waker().wake_by_ref();
+        return Poll::Pending
+    }
+}
+```
+
+这段代码执行以下操作：
+
+1.  我们获取整个系统的快照。
+2.  我们检查期物持有的温度快照与当前温度之间是否存在差异。如果没有差异，就没有必要重新渲染显示器或做出任何加热决策，我们只是返回 `Pending`，结束轮询。
+3.  我们检查当前温度是否低于期望温度。如果是，我们将 `HEAT_ON` 标志设置为 `true`。
+4.  如果温度高于期望温度，我们将 `HEAT_ON` 标志设置为 `false`。
+5.  我们清空终端以进行更新。
+6.  我们打印快照的当前状态。
+7.  我们更新期物所引用的快照。
+
+最初，我们获取整个系统的快照。这种方法可能值得商榷。有些人认为我们应该在每一步都加载原子值。这样每次我们决定改变主体状态或显示它时，都能获取到状态的真实性质。这是一个合理的论点，但在做这类决策时总是存在权衡。
+
+对于我们的系统，显示器是唯一会改变 `HEAT_ON` 标志状态的观察者，并且我们期物中的逻辑是基于温度来做决策的。然而，还有两个其他因素会影响温度，它们可能在快照和打印之间影响温度，如图6-2所示。
+
+**图6-2. 在温度快照被打印之前影响温度的期物**
+
+在我们的系统中，如果温度显示在瞬间稍有偏差，这并不要紧。可以认为，更重要的是获取快照，根据该快照做出决策，并打印该快照，以便查看用于做出决策的确切数据。这也能为我们提供清晰的调试信息。我们也可以先获取快照，根据该快照改变 `HEAT_ON` 标志的状态，然后在打印到控制台前加载每个原子变量，这样显示在打印的瞬间总是准确的。记录用于决策的快照，并在打印时立即加载原子变量，也是一种选择。
+
+对于我们简单的系统，我们已经到了吹毛求疵的地步，我们将坚持打印快照，以便观察我们的系统如何适应和做出决策。然而，在构建响应式系统时，考虑这些权衡是很重要的。你的观察者正在操作的数据可能已经过时了。
+
+对于我们的模拟，我们可以通过将运行时限制在只有一个线程来消除操作过时数据的风险。这将确保我们的快照不会过时，因为我们的显示器期物在处理时，另一个期物无法改变温度。除了将运行时限制为一个线程，我们还可以用互斥锁包装我们的温度，这也将确保我们的温度在快照和打印之间不会改变。
+
+然而，我们的系统是对温度做出反应。温度并非我们的系统凭空创造出来的概念。热量损失和加热器可以实时影响我们的温度，如果我们想出一些技巧来避免在我们有其他进程改变主体状态时，系统中的温度发生变化，那我们只是在自欺欺人。
+
+虽然我们的系统简单到不需要担心过时数据，但我们可以使用比较并交换功能，如标准库文档中的这个代码示例所示：
+
+```rust
+use std::sync::atomic::{AtomicI64, Ordering};
+
+let some_var = AtomicI64::new(5);
+
+assert_eq!(
+    some_var.compare_exchange(
+        5,
+        10,
+        Ordering::Acquire,
+        Ordering::Relaxed
+    ),
+    Ok(5)
+);
+assert_eq!(some_var.load(Ordering::Relaxed), 10);
+
+assert_eq!(
+    some_var.compare_exchange(
+        6,
+        12,
+        Ordering::SeqCst,
+        Ordering::Acquire
+    ),
+    Err(10)
+);
+assert_eq!(some_var.load(Ordering::Relaxed), 10);
+```
+
+在这里，我们可以理解为什么原子变量被称为“原子”的，因为它们的操作是原子的。这意味着在对原子值执行操作时，不会发生其他事务。在 `compare_exchange` 函数中，我们在将其更新为新值之前，断言原子值是某个特定值。如果值不符合预期，我们返回一个包含原子实际值的错误。我们可以使用 `compare_exchange` 函数来提示观察者根据返回的值做出另一个决策，并尝试根据更新的信息对原子值进行另一次更新。现在我们已经介绍了足够的内容，以突出响应式编程中的数据并发问题以及提供解决方案的领域。我们可以继续构建带有加热器和热量损失观察者的响应式系统。
+
+#### 构建我们的加热器和热量损失观察者
+
+为了使我们的加热器观察者正常工作，我们需要读取 `HEAT_ON` 布尔值，而不关心温度。然而，加热器有一个时间因素。遗憾的是，在撰写本文时，我们生活在一个加热器不是即时工作的世界里；它们需要时间来加热房间。因此，与温度快照不同，我们的加热器期物有一个时间快照，这使我们的加热器期物具有以下形式：
+
+```rust
+pub struct HeaterFuture {
+    pub time_snapshot: Instant,
+}
+
+impl HeaterFuture {
+    pub fn new() -> Self {
+        HeaterFuture {
+            time_snapshot: Instant::now()
+        }
+    }
+}
+```
+
+现在我们有了一个时间快照，我们可以引用它并在一定持续时间后提高温度，通过 `poll` 函数实现：
+
+```rust
+impl Future for HeaterFuture {
+    type Output = ();
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output>
+    {
+        if HEAT_ON.load(Ordering::SeqCst) == false { // 1
+            self.time_snapshot = Instant::now();
+            cx.waker().wake_by_ref();
+            return Poll::Pending
+        }
+        let current_snapshot = Instant::now();
+        if current_snapshot.duration_since(self.time_snapshot) <
+            Duration::from_secs(3) { // 2
+            cx.waker().wake_by_ref();
+            return Poll::Pending
+        }
+        TEMP.fetch_add(3, Ordering::SeqCst); // 3
+        self.time_snapshot = Instant::now();
+        cx.waker().wake_by_ref();
+        return Poll::Pending
+    }
+}
+```
+
+在我们的加热器期物中，我们执行以下步骤：
+
+1.  如果 `HEAT_ON` 标志为 `false`，则尽快退出，因为什么也不会发生。我们希望尽快将期物从执行器中释放，以避免阻塞其他期物。
+2.  如果持续时间未超过 3 秒，我们也退出，因为加热器生效的时间尚未过去。
+3.  最后，时间已过去且 `HEAT_ON` 标志为 `true`，因此我们将温度提高 3 度。
+
+当 `HEAT_ON` 标志为 `false` 或时间未过去时，我们会在每个退出机会更新 `self.time_snapshot`。如果我们不更新时间快照，我们的加热器期物可能在 `HEAT_ON` 标志为 `false` 的情况下被轮询，直到 3 秒过去。但只要 `HEAT_ON` 标志切换到 `true`，对温度的影响将是即时的。对于我们的加热器期物，我们需要在每次轮询之间重置状态。
+
+对于我们的热量损失期物，我们有：
+
+```rust
+pub struct HeatLossFuture {
+    pub time_snapshot: Instant,
+}
+impl HeatLossFuture {
+    pub fn new() -> Self {
+        HeatLossFuture {
+            time_snapshot: Instant::now()
+        }
+    }
+}
+```
+
+对于我们的热量损失期物，构造方法将与加热器期物相同，因为我们引用的是每次轮询之间经过的时间。然而，在这个 `poll` 函数中，我们只在效果发生后重置快照，因为在这个模拟中热量损失只是一个常数。我们建议你尝试自己构建这个期物。如果你尝试自己构建期物，它应该大致如下形式：
+
+```rust
+impl Future for HeatLossFuture {
+    type Output = ();
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output>
+    {
+        let current_snapshot = Instant::now();
+        if current_snapshot.duration_since(self.time_snapshot) >
+            Duration::from_secs(3) {
+            TEMP.fetch_sub(1, Ordering::SeqCst);
+            self.time_snapshot = Instant::now();
+        }
+        cx.waker().wake_by_ref();
+        return Poll::Pending
+    }
+}
+```
+
+现在，我们有了所有将持续轮询的期物，只要程序在运行。运行以下代码中的所有期物将导致一个持续更新温度并显示加热器是否开启的显示器：
+
+```rust
+#[tokio::main]
+async fn main() {
+    let display = tokio::spawn(async { DisplayFuture::new().await; });
+    let heat_loss = tokio::spawn(async { HeatLossFuture::new().await; });
+    let heater = tokio::spawn(async { HeaterFuture::new().await; });
+
+    display.await.unwrap();
+    heat_loss.await.unwrap();
+    heater.await.unwrap();
+}
+```
+
+当达到期望温度后，你应该会看到它围绕期望温度轻微振荡。
+
+振荡在经典系统理论中是常见的。如果我们在显示器上增加一个时间快照并延迟 `HEAT_ON` 标志的切换，振荡将会变大。需要注意振荡。如果一个观察者的反应延迟，而另一个观察者又延迟地对第一个观察者的结果做出反应，你可能会得到一个非常难以理解或预测的混沌系统。这是 COVID-19 大流行期间及之后供应链中断的一个重要原因。Donella H. Meadows 的《系统思考》（Thinking in Systems）表明，需求的延迟反应会在供应链中造成振荡。长供应链有多个部分在振荡。如果振荡变得太不同步，你就会得到一个难以解决的混沌系统。这在一定程度上解释了为什么大流行后供应链需要很长时间才能恢复。幸运的是，计算机系统几乎是瞬间响应的。但要注意链接延迟并对它们做出反应的危险性。
+
+现在我们的系统正在运行，我们可以继续使用回调来获取用户输入。
+
+#### 通过回调获取用户输入
+
+要从终端获取用户输入，我们将使用 `device_query` crate，版本如下：
+
+```toml
+device_query = "1.1.3"
+```
+
+有了这个，我们使用这些 trait 和结构体：
+
+```rust
+use device_query::{DeviceEvents, DeviceState};
+use std::io::{self, Write};
+use std::sync::Mutex;
+```
+
+`device_query` crate 使用回调，这是一种异步编程的形式。回调用于将一个函数传入另一个函数。传入的函数随后被调用。我们可以用以下代码编写自己的基本回调函数：
+
+```rust
+fn perform_operation_with_callback<F>(callback: F)
+where
+    F: Fn(i32),
+{
+    let result = 42;
+    callback(result);
+}
+
+fn main() {
+    let my_callback = |result: i32| {
+        println!("The result is: {}", result);
+    };
+
+    perform_operation_with_callback(my_callback);
+}
+```
+
+我们刚才所做的仍然是阻塞的。我们可以通过使用一个持续循环的事件循环线程，使我们的回调对主线程非阻塞。这个循环然后接受作为回调的传入事件（图6-3）。
+
+**图6-3. 事件循环**
+
+例如，Node.js 服务器通常有一个线程池，事件循环将事件传递给该线程池。如果我们的回调有一个通道回到事件发出的源头，数据可以在方便时被发送回事件的源头。
+
+对于我们的输入，我们必须跟踪设备状态和输入，使用以下代码：
+
+```rust
+static INPUT: LazyLock<Arc<Mutex<String>>> = LazyLock::new(|| {
+    Arc::new(Mutex::new(String::new()))
+});
+static DEVICE_STATE: LazyLock<Arc<DeviceState>> = LazyLock::new(|| {
+    Arc::new(DeviceState::new())
+});
+```
+
+我们必须考虑代码的结构。现在，我们的显示器在显示器期物检查温度时更新，如果温度发生变化就更新显示器。然而，当我们有用户输入时，这就不再合适了。想一想，如果用户输入的更新只有在温度变化时才显示，这将不是一个好的应用程序。这将导致用户沮丧地多次按下同一个键，结果只在温度更新时看到他们的多次按键被执行。我们的系统需要在用户按下键的瞬间更新显示器。考虑到这一点，我们需要自己的渲染函数，可以在多个地方调用。这个函数的形式如下：
+
+```rust
+pub fn render(temp: i16, desired_temp: i16, heat_on: bool, input: String) {
+    clearscreen::clear().unwrap();
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+    println!("Temperature: {}\nDesired Temp: {}\nHeater On: {}",
+        temp as f32 / 100.0,
+        desired_temp as f32 / 100.0,
+        heat_on);
+    print!("Input: {}", input);
+    handle.flush().unwrap();
+}
+```
+
+这个函数与我们的显示器类似，但我们也打印出输入。这意味着我们的 `DisplayFuture` 的 `poll` 函数调用渲染函数如下：
+
+```rust
+#[tokio::main]
+async fn main() {
+    let _guard = DEVICE_STATE.on_key_down(|key| {
+        let mut input = INPUT.lock().unwrap();
+        input.push_str(&key.to_string());
+        std::mem::drop(input);
+        render(
+            TEMP.load(Ordering::SeqCst),
+            DESIRED_TEMP.load(Ordering::SeqCst),
+            HEAT_ON.load(Ordering::SeqCst),
+            INPUT.lock().unwrap().clone()
+        );
+    });
+    let display = tokio::spawn(async {
+        DisplayFuture::new().await;
+    });
+    let heat_loss = tokio::spawn(async {
+        HeatLossFuture::new().await;
+    });
+    let heater = tokio::spawn(async {
+        HeaterFuture::new().await;
+    });
+
+    display.await.unwrap();
+    heat_loss.await.unwrap();
+    heater.await.unwrap();
+}
+```
+
+注意 `_guard`，它是回调守卫。`device_query` crate 中的回调守卫在添加回调时返回。如果我们丢弃守卫，事件监听器将被移除。幸运的是，我们的主线程将被阻塞，直到我们退出程序，因为我们的显示器、热量损失和加热器任务将持续轮询，直到我们强制程序退出。
+
+`on_key_down` 函数创建一个线程并运行一个事件循环。这个事件循环有鼠标和键盘移动的回调。一旦我们从键盘按键获得事件，我们将其添加到输入状态并重新渲染显示器。我们不会花太多精力将按键映射到显示器的各种效果，因为这有点偏离本章的目标。现在运行程序，你应该能看到输入随着你按下的键的轨迹而更新。
+
+回调简单易实现。回调的执行流程也具有可预测性。然而，你可能会陷入嵌套回调的陷阱，这可能演变成一种称为“回调地狱”的情况。这导致代码难以维护和理解。
+
+现在你有了一个接收用户输入的基本系统。如果你想进一步探索这个系统，可以修改输入代码以处理期望温度的变化。请注意，我们的系统只对基本数据类型做出反应。如果我们的系统需要复杂的数据类型来表示事件呢？此外，我们的系统可能需要知道事件的顺序并对所有事件做出反应才能正常工作。
+
+并非每个响应式系统都仅仅是对当前时间的整数值做出反应。例如，如果我们要构建一个股票交易系统，我们会想知道股票的历史数据，而不仅仅是在我们轮询它时的当前价格。我们也不能保证轮询在异步中何时发生，所以当我们轮询股票价格事件时，我们希望访问自上次轮询以来发生的所有事件，以决定哪些事件是重要的。为此，我们需要一个可以订阅的事件总线。
+
+#### 通过事件总线启用广播
+
+事件总线是一个系统，它允许更广泛的系统各个部分发送包含特定信息的消息。与具有简单发布/订阅关系的广播通道不同，事件总线可以在多个站点停靠，只有少数特定的人会“下车”。这意味着我们可以有多个订阅者来接收来自单一源的更新，但这些订阅者可以要求只接收特定类型的消息，而不是每个广播的消息。我们可以让一个主体向事件总线发布一个事件。多个观察者可以按照发布顺序消费该事件。在本节中，我们将构建自己的事件总线，以探索其底层机制。然而，广播通道在像 Tokio 这样的 crate 中已经可用。
+
+广播通道类似于无线电广播。当广播电台发出消息时，多个听众可以收听同一个消息，只要他们都调到同一个频道。在编程中，对于广播通道，多个侦听器可以订阅并接收相同的消息。广播通道与常规通道不同。在常规通道中，消息由程序的一部分发送，由另一部分接收。在广播通道中，消息由程序的一部分发送，同一个消息由程序的多个部分接收。
+
+除非你有特定需求，否则使用现成的广播通道比构建自己的要好。
+
+在构建我们的事件总线之前，我们需要以下依赖项：
+
+```toml
+tokio = { version = "1.26.0", features = ["full"] }
+futures = "0.3.28"
+```
+
+我们需要这些导入：
+
+```rust
+use std::sync::{Arc, Mutex, atomic::{AtomicU32, Ordering}};
+use tokio::sync::Mutex as AsyncMutex;
+use std::collections::{VecDeque, HashMap};
+use std::marker::Send;
+```
+
+现在我们已经准备好构建我们的事件总线结构体了。
+
+#### 构建我们的事件总线结构体
+
+因为异步编程需要跨线程发送结构体以供异步任务轮询，所以我们将不得不克隆每个已发布的事件，并将这些克隆的事件分发给每个订阅者消费。如果消费者因某种原因被延迟，消费者还需要能够访问事件的积压队列。消费者还需要能够取消订阅事件。考虑到所有这些因素，我们的事件总线结构体采用以下形式：
+
+```rust
+pub struct EventBus<T: Clone + Send> {
+    chamber: AsyncMutex<HashMap<u32, VecDeque<T>>>,
+    count: AtomicU32,
+    dead_ids: Mutex<Vec<u32>>,
+}
+```
+
+我们用 `T` 表示的事件需要实现 `Clone` trait 以便可以被克隆并分发给每个订阅者，以及实现 `Send` trait 以便跨线程发送。我们的 `chamber` 字段是订阅者通过特定 ID 访问其事件队列的地方。`count` 字段将用于分配 ID，`dead_ids` 将用于跟踪已取消订阅的消费者。
+
+注意 `chamber` 互斥锁是异步的，而 `dead_ids` 互斥锁不是异步的。`chamber` 互斥锁是异步的，因为我们可能有大量订阅者循环并轮询 `chamber` 以访问他们的个人队列。我们不希望执行器被等待互斥锁的异步任务阻塞。这将大大降低系统的性能。然而，对于我们的 `dead_ids`，我们不会循环和轮询这个字段。它只会在消费者想要取消订阅时被访问。拥有一个阻塞式互斥锁也使我们能够轻松实现当句柄被丢弃时的取消订阅过程。我们将在构建句柄时详述这一点。
+
+对于我们的事件总线结构体，我们现在可以实现以下函数：
+
+```rust
+impl<T: Clone + Send> EventBus<T> {
+    pub fn new() -> Self {
+        Self {
+            chamber: AsyncMutex::new(HashMap::new()),
+            count: AtomicU32::new(0),
+            dead_ids: Mutex::new(Vec::new()),
+        }
+    }
+    pub async fn subscribe(&self) -> EventHandle<T> {
+        // ...
+    }
+    pub fn unsubscribe(&self, id: u32) {
+        self.dead_ids.lock().unwrap().push(id);
+    }
+    pub async fn poll(&self, id: u32) -> Option<T> {
+        // ...
+    }
+    pub async fn send(&self, event: T) {
+        // ...
+    }
+}
+```
+
+我们所有的函数都有一个 `&self` 引用，没有可变引用。这是因为我们利用原子变量和互斥锁实现了内部可变性，可变引用在互斥锁内部，绕过了 Rust 一次只能有一个可变引用的规则。原子变量也不需要可变引用，因为我们可以执行原子操作。这意味着我们的事件总线结构体可以包装在 `Arc` 中，并被克隆多次以跨多个线程发送，使这些线程都能安全地对事件总线执行多个可变操作。对于我们的 `unsubscribe` 函数，我们只是将 ID 推送到 `dead_ids` 字段。我们将在第 132 页的“通过异步任务与我们的事件总线交互”中解释这背后的原因。
+
+消费者需要做的第一个操作是调用总线的 `subscribe` 函数，其定义如下：
+
+```rust
+pub async fn subscribe(&self) -> EventHandle<T> {
+    let mut chamber = self.chamber.lock().await;
+    let id = self.count.fetch_add(1, Ordering::SeqCst);
+    chamber.insert(id, VecDeque::new());
+    EventHandle {
+        id,
+        event_bus: Arc::new(self),
+    }
+}
+```
+
+在这段代码中，我们返回一个 `EventHandle` 结构体，我们将在下一小节中定义句柄。我们将 `count` 加 1，使用新的 `count` 作为 ID，并在该 ID 下插入一个新队列。然后我们返回一个对 `self` 的引用，这是包装在 `Arc` 中的事件总线，与 ID 一起放入句柄结构体中，以允许消费者与事件总线交互。
+
+将 `count` 加 1 并将其用作新的 ID 是分配 ID 的一种简单方法，但在高吞吐量的长运行系统中，最终可能会耗尽数字。如果这个风险是一个严肃的考虑因素，你可以添加另一个字段来回收已从 `dead_ids` 字段清除的 ID。在分配新 ID 时，可以从回收的 ID 中取出。然后只有在回收的 ID 中没有 ID 时，才增加 `count`。
+
+现在消费者已经订阅了总线，它可以使用以下总线函数进行轮询：
+
+```rust
+pub async fn poll(&self, id: u32) -> Option<T> {
+    let mut chamber = self.chamber.lock().await;
+    let queue = chamber.get_mut(&id).unwrap();
+    queue.pop_front()
+}
+```
+
+我们在获取与 ID 相关的队列时直接使用 `unwrap`，因为我们将通过句柄进行交互，并且我们只能在订阅总线时获得该句柄。因此，我们知道该 ID 肯定在 `chamber` 中。由于每个 ID 都有自己的队列，每个订阅者可以按照自己的时间消费所有已发布的事件。这个简单的实现可以修改，使 `poll` 函数返回整个队列，用空队列替换现有队列。这种新方法减少了对总线的轮询调用，因为消费者循环遍历刚从总线 `poll` 函数调用中提取的队列。由于我们将自己的结构体作为事件，我们也可以创建一个时间戳 trait，并规定这是放置到总线上的事件所必需的。时间戳将使我们能够在轮询仅返回最近事件时丢弃已过期的事件。
+
+现在我们已经定义了一个基本的 `poll` 函数，我们可以为总线构建 `send` 函数：
+
+```rust
+pub async fn send(&self, event: T) {
+    let mut chamber = self.chamber.lock().await;
+    for (_, value) in chamber.iter_mut() {
+        value.push_back(event.clone());
+    }
+}
+```
+
+我们已经拥有了事件总线在其内部数据结构上运行所需的一切。我们现在需要构建我们自己的句柄。
+
+#### 构建我们的事件总线句柄
+
+我们的句柄需要一个 ID 和对总线的引用，以便句柄可以轮询总线。我们的句柄用以下代码定义：
+
+```rust
+pub struct EventHandle<'a, T: Clone + Send> {
+    pub id: u32,
+    event_bus: Arc<&'a EventBus<T>>,
+}
+impl<'a, T: Clone + Send> EventHandle<'a, T> {
+    pub async fn poll(&self) -> Option<T> {
+        self.event_bus.poll(self.id).await
+    }
+}
+```
+
+通过生命周期标注，我们可以看到句柄的生存期不能超过总线的生存期。我们必须注意，`Arc` 会计算引用，只有当我们的异步系统中没有指向总线的 `Arc` 时，才会丢弃总线。因此，我们可以保证总线将存活到我们系统中最后一个句柄，使我们的句柄线程安全。
+
+我们还需要注意丢弃句柄。如果句柄从内存中移除，就无法访问与该句柄 ID 相关的队列，因为句柄存储了 ID。然而，事件会继续发送到该 ID 的队列。如果开发人员使用我们的队列，并且在其代码中丢弃句柄而没有显式调用 `unsubscribe` 函数，他们将拥有一个充满多个没有订阅者的队列的事件总线。这种情况会浪费内存，甚至可能根据特定参数增长到计算机内存耗尽的程度。这称为**内存泄漏**，这是一个真实的风险。图 6-4 是一张咖啡机的照片，它遭受的不是咖啡泄漏，而是内存泄漏。
+
+为了防止内存泄漏，我们必须为我们的句柄实现 `Drop` trait，这将在句柄被丢弃时从事件总线取消订阅：
+
+```rust
+impl<'a, T: Clone + Send> Drop for EventHandle<'a, T> {
+    fn drop(&mut self) {
+        self.event_bus.unsubscribe(self.id);
+    }
+}
+```
+
+**图6-4. 一台显示内存泄漏的咖啡机，表明机器内存不足**
+
+我们的句柄现在已经完成，我们可以使用它来安全地从总线消费事件，而不会有内存泄漏的风险。我们将使用我们的句柄来构建与事件总线交互的任务。
+
+#### 通过异步任务与事件总线交互
+
+在本章中，我们的观察者一直在实现 `Future` trait，并将主体的状态与观察者的状态进行比较。既然我们直接将事件流式传输到我们的 ID，我们可以轻松地使用异步函数实现一个消费者异步任务：
+
+```rust
+async fn consume_event_bus(event_bus: Arc<EventBus<f32>>) {
+    let handle = event_bus.subscribe().await;
+    loop {
+        let event = handle.poll().await;
+        match event {
+            Some(event) => {
+                println!("id: {} value: {}", handle.id, event);
+                if event == 3.0 {
+                    break;
+                }
+            },
+            None => {}
+        }
+    }
+}
+```
+
+对于我们的示例，我们流式传输一个浮点数，如果发送了 `3.0` 则中断循环。这只是出于教育目的，但实现逻辑来影响 `HEAT_ON` 原子布尔值将是微不足道的。如果我们不想过于积极地轮询事件总线，也可以在 `None` 分支上实现 Tokio 异步睡眠函数。
+
+事件的创建速率有时可能大于事件被处理的速率。这导致事件积压，称为**背压**。背压可以通过超出本书范围的多种方法来解决。缓冲、流量控制、速率限制、批处理和负载均衡等概念可以在背压形成时帮助减少它。我们将在第 11 章介绍如何测试通道的背压。
+
+我们还需要一个后台任务，在一定时间后批量清理 `dead_ids`。这个垃圾收集任务也可以通过异步函数定义：
+
+```rust
+async fn garbage_collector(event_bus: Arc<EventBus<f32>>) {
+    loop {
+        let mut chamber = event_bus.chamber.lock().await;
+        let dead_ids = event_bus.dead_ids.lock().unwrap().clone();
+        event_bus.dead_ids.lock().unwrap().clear();
+        for id in dead_ids.iter() {
+            chamber.remove(id);
+        }
+        std::mem::drop(chamber);
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+}
+```
+
+批量移除后，我们立即丢弃 `chamber`。我们不希望在未使用它时阻塞其他尝试访问 `chamber` 的任务。
+
+在数据库系统中，不立即在删除请求发出时删除记录是一种常见做法。这称为**逻辑删除**（tombstoning）。相反，数据库会标记一条记录，以指示 GET 请求将该记录视为已删除。然后，垃圾收集过程会定期清理逻辑删除的记录。对每个删除请求都清理和重新分配存储空间是一种代价高昂的选择，因为你希望继续处理对数据库的异步请求。
+
+我们已经准备好与事件总线交互所需的一切。现在，我们创建事件总线及其引用：
+
+```rust
+let event_bus = Arc::new(EventBus::<f32>::new());
+let bus_one = event_bus.clone();
+let bus_two = event_bus.clone();
+let gb_bus_ref = event_bus.clone();
+```
+
+现在，即使 `event_bus` 直接被丢弃，其他引用也会因为 `Arc` 而保持 `EventBus<f32>` 存活。所有四个引用都必须被丢弃。然后我们启动消费者和垃圾收集进程任务：
+
+```rust
+let _gb = tokio::task::spawn(async {
+    garbage_collector(gb_bus_ref).await
+});
+let one = tokio::task::spawn(async {
+    consume_event_bus(bus_one).await
+});
+let two = tokio::task::spawn(async {
+    consume_event_bus(bus_two).await
+});
+```
+
+在这个例子中，我们冒着在两个任务订阅之前发送事件的风险，所以我们等待一秒，然后广播三个事件：
+
+```rust
+std::thread::sleep(std::time::Duration::from_secs(1));
+event_bus.send(1.0).await;
+event_bus.send(2.0).await;
+event_bus.send(3.0).await;
+```
+
+第三个事件是 `3.0`，意味着消费任务将从总线取消订阅。我们可以打印 `chamber` 的状态，等待垃圾收集器清除 `dead_ids`，然后再次打印状态：
+
+```rust
+let _ = one.await;
+let _ = two.await;
+println!("{:?}", event_bus.chamber.lock().await);
+std::thread::sleep(std::time::Duration::from_secs(3));
+println!("{:?}", event_bus.chamber.lock().await);
+```
+
+运行此代码会给我们以下打印输出：
+
+```
+    id: 0 value: 1
+    id: 1 value: 1
+    id: 0 value: 2
+    id: 1 value: 2
+    id: 0 value: 3
+    id: 1 value: 3
+    {1: [], 0: []}
+```
+
+两个订阅者都收到了事件，并且当它们取消订阅时，垃圾收集正常工作。
+
+事件总线是响应式编程的支柱。我们可以继续以动态方式添加和移除订阅者。我们可以控制事件的分配和消费方式，并且实现仅仅钩入事件总线的代码很简单。
+
+### 总结
+
+虽然本书的范围无法全面介绍响应式编程，但我们涵盖了其基本的异步属性，例如轮询主体以及通过我们自己编写的事件总线异步分发数据。现在你应该能够提出响应式编程的异步实现了。
+
+响应式编程并不局限于只有一个程序和不同的线程及通道。响应式编程的概念可以应用于多台计算机和进程，其标题为“响应式系统”。例如，我们的消息总线可以向集群中的各个服务器发送消息。事件驱动系统在扩展架构时也很有用。我们必须记住，使用响应式编程时，解决方案有更多活动部件。只有当实时系统在性能上开始失败时，我们才转向事件驱动系统。一开始就采用响应式编程可能会导致解决方案复杂且难以维护，因此要小心。
+
+你可能已经注意到，我们依赖 Tokio 来实现我们的异步代码。在第 7 章中，我们将介绍如何自定义 Tokio 来解决具有约束和细微差别的问题。为 Tokio 专门开设一整章可能被认为是有争议的，但它实际上是 Rust 生态系统中使用最广泛的异步运行时。
+
+## 第七章 自定义 Tokio
+
+在本书中，我们一直在示例中使用 *Tokio*，不仅因为它成熟稳定，还因为它语法清晰，只需一个宏就能运行异步示例。如果你在异步 Rust 代码库上工作过，很可能遇到过 *Tokio*。然而，到目前为止，我们仅使用这个 crate 来构建一个标准的 *Tokio* 运行时，然后将异步任务发送到该运行时。在本章中，我们将自定义我们的 *Tokio* 运行时，以便对任务在特定线程集中的处理方式进行精细控制。我们还将测试在异步运行时中对线程状态的不安全访问是否真正安全。最后，我们将介绍如何在异步运行时完成时启用优雅关闭。
+
+通过本章的学习，你将能够配置 *Tokio* 运行时以解决你的特定问题。你还能够指定异步任务在哪个线程上独占处理，以便你的任务可以依赖线程特定的状态，从而可能减少访问数据所需的锁。最后，你将能够指定在程序收到 Ctrl-C 或 kill 信号时程序如何关闭。那么，让我们开始构建 Tokio 运行时吧。
+
+跳过本章不会影响你对本书其余部分的理解，因为本章内容涵盖如何根据自己的喜好使用 *Tokio*。本章不介绍新的异步理论。
+
+### 构建运行时
+
+在第 3 章中，我们通过实现自己的任务生成函数展示了任务在异步运行时中是如何处理的。这让我们对任务的处理方式有了很大的控制权。我们之前的 *Tokio* 示例仅仅使用了 `#[tokio::main]` 宏。虽然这个宏对于以最少的代码实现异步示例很有用，但仅仅使用 `#[tokio::main]` 并不能让我们对异步运行时的实现方式有太多控制。为了探索 Tokio，我们可以先设置一个可以选择的 Tokio 运行时来调用。对于我们配置的运行时，需要以下依赖：
+
+```toml
+tokio = { version = "1.33.0", features = ["full"] }
+```
+
+我们还需要以下结构体和特征：
+
+```rust
+use std::future::Future;
+use std::time::Duration;
+use tokio::runtime::{Builder, Runtime};
+use tokio::task::JoinHandle;
+use std::sync::LazyLock;
+```
+
+为了构建我们的运行时，我们可以依靠 `LazyLock` 进行惰性求值，这样我们的运行时只定义一次，就像我们在第 3 章构建运行时时所做的那样：
+
+```rust
+static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
+    Builder::new_multi_thread()
+        .worker_threads(4)
+        .max_blocking_threads(1)
+        .on_thread_start(|| {
+            println!("runtime A 的线程正在启动");
+        })
+        .on_thread_stop(|| {
+            println!("runtime A 的线程正在停止");
+        })
+        .thread_keep_alive(Duration::from_secs(60))
+        .global_queue_interval(61)
+        .on_thread_park(|| {
+            println!("runtime A 的线程正在停放");
+        })
+        .thread_name("我们的自定义运行时 A")
+        .thread_stack_size(3 * 1024 * 1024)
+        .enable_time()
+        .build()
+        .unwrap()
+});
+```
+
+我们获得了很多开箱即用的配置，包括以下属性：
+
+`worker_threads`
+处理异步任务的线程数。
+
+`max_blocking_threads`
+可以分配给阻塞任务的线程数。阻塞任务不允许切换，因为它没有 `await`，或者在 `await` 语句之间需要长时间的 CPU 计算。因此，线程在处理该任务时会阻塞相当长的时间。CPU 密集型任务或同步任务通常被称为阻塞任务。如果我们阻塞了所有线程，其他任务就无法启动。正如本书通篇所述，根据你的程序要解决的问题，这可能没问题。但是，例如，如果我们使用异步来处理传入的网络请求，我们仍然希望处理更多传入的网络请求。因此，通过 `max_blocking_threads`，我们可以限制可以生成的用于处理阻塞任务的额外线程数。我们可以使用运行时的 `spawn_blocking` 函数生成阻塞任务。
+
+`on_thread_start/stop`
+工作线程启动或停止时触发的函数。如果你想构建自己的监控，这会很有用。
+
+`thread_keep_alive`
+阻塞线程的超时时间。一旦阻塞线程的时间超过此限制，超时的任务将被取消。
+
+`global_queue_interval`
+调度器在关注新任务之前的 tick 次数。一个 tick 代表调度器轮询任务以查看其是否可以运行或需要等待的一个实例。在我们的配置中，经过 61 个 tick 后，调度器将处理一个发送到运行时的新任务。如果没有任务需要轮询，调度器将不等待 61 个 tick 就处理发送到运行时的新任务。公平性和开销之间存在权衡。tick 数越低，发送到运行时的新任务获得关注的速度就越快。然而，我们也会更频繁地检查队列中的新任务，这会产生开销。如果我们不断检查新任务而不是推进现有任务，系统效率可能会降低。我们还必须承认每个任务的 `await` 语句数量。如果我们的任务通常包含许多 `await` 语句，调度器需要处理很多步骤，在每个 `await` 语句上进行轮询才能完成任务。然而，如果任务只有一个 `await` 语句，调度器将需要更少的轮询来推进任务。Tokio 团队决定单线程运行时的默认 tick 数应为 31，多线程运行时为 61。多线程建议的 tick 数更高，因为多个线程正在消费任务，导致这些任务以更快的速度获得关注。
+
+`on_thread_park`
+当工作线程停放时触发的函数。当工作线程没有任务要消费时，通常会被停放。如果你想实现自己的监控，`on_thread_park` 函数会很有用。
+
+`thread_name`
+为运行时创建的线程命名。默认名称是 `tokio-runtime-worker`。
+
+`thread_stack_size`
+这允许我们确定为每个工作线程的堆栈分配的内存字节数。堆栈是存储局部变量、函数返回地址和函数调用管理的内存部分。如果你知道你的计算很简单并且想要节省内存，那么选择较低的堆栈大小是有意义的。在撰写本文时，此堆栈大小的默认值是 2 mebibytes (MiB)。
+
+`enable_time`
+为 Tokio 启用时间驱动器。
+
+现在我们已经构建并配置了运行时，我们可以定义如何调用它：
+
+```rust
+pub fn spawn_task<F, T>(future: F) -> JoinHandle<T>
+where
+    F: Future<Output = T> + Send + 'static,
+    T: Send + 'static,
+{
+    RUNTIME.spawn(future)
+}
+```
+
+我们并不真正需要这个函数，因为我们可以直接调用我们的运行时。但是，值得注意的是，函数签名本质上与第 3 章中的 `spawn_task` 函数相同。唯一的区别是我们返回一个 Tokio 的 `JoinHandle`，而不是 `Task`。
+
+现在我们知道如何调用运行时了，我们可以定义一个基本的期物：
+
+```rust
+async fn sleep_example() -> i32 {
+    println!("睡眠 2 秒");
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    println!("睡眠完成");
+    20
+}
+```
+
+然后我们运行我们的程序：
+
+```rust
+fn main() {
+    let handle = spawn_task(sleep_example());
+    println!("已生成任务");
+    println!("任务状态: {}", handle.is_finished());
+    std::thread::sleep(Duration::from_secs(3));
+    println!("任务状态: {}", handle.is_finished());
+    let result = RUNTIME.block_on(handle).unwrap();
+    println!("任务结果: {}", result);
+}
+```
+
+我们生成任务，然后等待任务完成，使用运行时的 `block_on` 函数。我们还定期检查任务是否完成。运行代码会得到以下打印输出：
+
+```
+runtime A 的线程正在启动
+runtime A 的线程正在启动
+正在睡眠 2 秒
+runtime A 的线程正在启动
+runtime A 的线程正在停放
+runtime A 的线程正在停放
+已生成任务
+runtime A 的线程正在停放
+任务状态: false
+runtime A 的线程正在启动
+runtime A 的线程正在停放
+睡眠完成
+runtime A 的线程正在停放
+任务状态: true
+任务结果: 20
+```
+
+虽然这个打印输出很长，但我们可以看到运行时开始创建工作线程，并且在所有工作线程创建之前就启动了我们的异步任务。因为我们只发送了一个异步任务，我们还可以看到空闲的工作线程正在被停放。到我们获得任务结果时，所有工作线程都已被停放。我们可以看到 Tokio 停放线程相当积极。这很有用，因为如果我们创建了多个运行时但并不总是使用其中一个，那么未使用的运行时将迅速停放其线程，从而减少资源使用量。
+
+现在我们已经介绍了如何构建和自定义 Tokio 运行时，我们可以重新创建第 3 章中构建的运行时：
+
+```rust
+static HIGH_PRIORITY: LazyLock<Runtime> = LazyLock::new(|| {
+    Builder::new_multi_thread()
+        .worker_threads(2)
+        .thread_name("高优先级运行时")
+        .enable_time()
+        .build()
+        .unwrap()
+});
+
+static LOW_PRIORITY: LazyLock<Runtime> = LazyLock::new(|| {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .thread_name("低优先级运行时")
+        .enable_time()
+        .build()
+        .unwrap()
+});
+```
+
+这给了我们如图 7-1 所示的布局。
+
+**图 7-1. 我们的 Tokio 运行时布局**
+
+我们的两个 Tokio 运行时与第 3 章中具有两个队列和任务窃取的运行时之间的唯一区别是，高优先级运行时的线程不会从低优先级运行时窃取任务。此外，高优先级运行时有两个队列。差异并不太明显，因为线程在同一个运行时内窃取任务，所以只要我们不介意任务处理的确切顺序，它实际上就是一个队列。
+
+我们还必须承认，当没有剩余的异步任务需要处理时，线程会被停放。如果我们的线程数多于核心数，操作系统将管理这些线程之间的资源分配和上下文切换。简单地增加超过核心数的线程数不会导致速度的线性提升。然而，如果我们为高优先级运行时设置三个线程，为低优先级运行时设置两个线程，我们仍然可以有效地分配资源。如果没有任务要在低优先级运行时中处理，那两个线程将被停放，高优先级运行时的三个线程将获得更多的 CPU 分配。
+
+现在我们已经定义了线程和运行时，我们需要以不同的方式与这些线程交互。我们可以使用本地池来获得对任务流程的更多控制。
+
+### 使用本地池处理任务
+
+通过本地池，我们可以对处理异步任务的线程有更多的控制。在探索本地池之前，我们需要包含以下依赖项：
+
+```toml
+tokio-util = { version = "0.7.10", features = ["full"] }
+```
+
+我们还需要以下导入：
+
+```rust
+use tokio_util::task::LocalPoolHandle;
+use std::cell::RefCell;
+```
+
+使用本地池时，我们将生成的异步任务绑定到特定的池。这意味着我们可以使用未实现 `Send` trait 的结构体，因为我们确保任务停留在特定线程上。然而，因为我们确保异步任务在特定线程上运行，我们将无法利用任务窃取；我们将无法开箱即用地获得标准 Tokio 运行时的性能。
+
+为了了解异步任务如何映射到本地池，我们首先需要定义一些本地线程数据：
+
+```rust
+thread_local! {
+    pub static COUNTER: RefCell<u32> = RefCell::new(1);
+}
+```
+
+每个线程都可以访问其 `COUNTER` 变量。然后我们需要一个简单的异步任务，它阻塞线程一秒钟，增加该异步任务所在线程的 `COUNTER`，然后打印出 `COUNTER` 和数字：
+
+```rust
+async fn something(number: u32) -> u32 {
+    std::thread::sleep(std::time::Duration::from_secs(3));
+    COUNTER.with(|counter| {
+        *counter.borrow_mut() += 1;
+        println!("Counter: {} 对应: {}", *counter.borrow(), number);
+    });
+    number
+}
+```
+
+通过这个任务，我们将看到本地池的配置如何处理多个任务。
+
+在我们的主函数中，我们仍然需要一个 Tokio 运行时，因为我们仍然需要等待生成的任务：
+
+```rust
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
+    let pool = LocalPoolHandle::new(1);
+    // ...
+}
+```
+
+我们的 Tokio 运行时有一个 `flavor` 参数，设为 `current_thread`。在撰写本文时，`flavor` 可以是 `CurrentThread` 或 `MultiThread`。`MultiThread` 选项在多个线程上执行任务。`CurrentThread` 在当前线程上执行所有任务。另一个 `flavor`，`MultiThreadAlt`，也声称在多个线程上执行任务，但不稳定。所以我们实现的运行时将在当前线程上执行所有任务，并且本地池中有一个线程。
+
+现在我们定义了池，我们可以用它来生成任务：
+
+```rust
+let one = pool.spawn_pinned(|| async {
+    println!("one");
+    something(1).await
+});
+let two = pool.spawn_pinned(|| async {
+    println!("two");
+    something(2).await
+});
+let three = pool.spawn_pinned(|| async {
+    println!("three");
+    something(3).await
+});
+```
+
+我们现在有了三个句柄，因此我们可以等待这些句柄并返回这些任务的总和：
+
+```rust
+let result = async {
+    let one = one.await.unwrap();
+    let two = two.await.unwrap();
+    let three = three.await.unwrap();
+    one + two + three
+};
+println!("结果: {}", result.await);
+```
+
+运行我们的代码时，我们得到以下打印输出：
+
+```
+one
+Counter: 2 对应: 1
+two
+Counter: 3 对应: 2
+three
+Counter: 4 对应: 3
+结果: 6
+```
+
+我们的任务是按顺序处理的，最高的 `COUNTER` 值是 4，这意味着所有任务都是在一个线程中处理的。现在，如果我们将本地池大小增加到 3，我们得到以下打印输出：
+
+```
+one
+three
+two
+Counter: 2 对应: 1
+Counter: 2 对应: 3
+Counter: 2 对应: 2
+结果: 6
+```
+
+所有三个任务在生成后立即开始处理。我们还可以看到 `COUNTER` 对每个任务的值都是 2。这意味着我们的三个任务被分配到了所有三个线程。
+
+我们也可以专注于特定的线程。例如，我们可以将任务生成到索引为零的线程：
+
+```rust
+let one = pool.spawn_pinned_by_idx(|| async {
+    println!("one");
+    something(1).await
+}, 0);
+```
+
+如果我们将所有任务都生成到索引为零的线程，我们会得到这个打印输出：
+
+```
+one
+Counter: 2 对应: 1
+two
+Counter: 3 对应: 2
+three
+Counter: 4 对应: 3
+结果: 6
+```
+
+我们的打印输出与单线程池相同，尽管池中有三个线程。如果我们将标准睡眠换成 Tokio 睡眠，我们将得到以下打印输出：
+
+```
+one
+two
+three
+Counter: 2 对应: 1
+Counter: 3 对应: 2
+Counter: 4 对应: 3
+结果: 6
+```
+
+因为 Tokio 睡眠是异步的，我们的单线程可以同时处理多个异步任务，但 `COUNTER` 访问发生在睡眠之后。我们可以看到 `COUNTER` 值是 4，这意味着尽管我们的线程同时处理了多个异步任务，但我们的异步任务从未跨越到另一个线程。
+
+通过本地池，我们可以精细控制将任务发送到哪里进行处理。尽管我们牺牲了任务窃取，但出于以下优势，我们可能希望使用本地池：
+
+**处理不可发送的期物**
+如果期物无法在线程间发送，我们可以使用本地线程池处理它们。
+
+**线程亲和性**
+因为我们可以确保任务在特定线程上执行，所以我们可以利用其状态。一个简单的例子是缓存。如果我们需要计算或从其他资源（如服务器）获取值，我们可以将其缓存在特定线程中。该线程中的所有任务都可以访问该值，因此你发送到该特定线程的所有任务都不需要再次获取或计算该值。
+
+**线程本地操作的性能**
+你可以使用互斥锁和原子引用计数器跨线程共享数据。然而，线程的同步会带来一些开销。例如，获取一个其他线程也在获取的锁并非没有代价。如图 7-2 所示，如果我们有一个具有四个工作线程的标准 Tokio 异步运行时，并且我们的计数器是 `Arc<Mutex<T>>`，那么一次只有一个线程可以访问计数器。
+
+**图 7-2. 互斥锁一次只允许一个 Tokio 线程访问它**
+
+其他三个线程将不得不等待访问 `Arc<Mutex<T>>`。将计数器的状态保持为每个线程本地将消除该线程等待访问互斥锁的需要，从而加快进程。然而，每个线程中的本地计数器并不包含完整的情况。这些计数器不知道其他线程中其他计数器的状态。获取完整计数状态的一种方法可以是向每个线程发送一个获取计数器的异步任务，最后合并每个线程的结果。我们在第 149 页的“优雅关闭”中介绍了这种方法。线程内数据的本地访问也有助于在涉及 CPU 缓存数据时优化 CPU 密集型任务。
+
+**安全访问不可发送的资源**
+有时数据资源不是线程安全的。将该资源保存在一个线程中，并将任务发送到该线程中处理，是绕过这个问题的一种方法。
+
+我们在整本书中都强调了阻塞任务可能阻塞线程的潜力。但是，必须强调的是，阻塞对我们本地池可能造成的损害可能更明显，因为我们没有任何任务窃取。使用 Tokio 的 `spawn_blocking` 函数将防止这种情况。
+
+到目前为止，我们已经能够通过使用 `RefCell` 在异步任务中访问线程的状态。它使我们能够通过 Rust 在运行时检查借用规则来访问数据。然而，在 `RefCell` 中借用数据时，这种检查会带来一些开销。我们可以删除这些检查，仍然可以使用不安全代码安全地访问数据，这将在下一节中探讨。
+
+### 直接访问线程数据（不安全）
+
+为了消除对线程数据可变借用的运行时检查，我们需要将数据包装在 `UnsafeCell` 中。这意味着我们直接访问线程数据，而不进行任何检查。然而，我知道你在想什么。如果我们使用 `UnsafeCell`，那危险吗？可能危险，所以我们必须小心确保安全。
+
+考虑我们的系统，我们有一个处理异步任务的单线程，这些任务不会转移到其他线程。我们必须记住，虽然这个单线程可以通过轮询同时处理多个异步任务，但它一次只能主动处理一个异步任务。因此，我们可以假设，当我们的一个异步任务正在访问 `UnsafeCell` 中的数据并进行处理时，没有其他异步任务在访问数据，因为 `UnsafeCell` 不是异步的。但是，我们需要确保在对数据的引用在作用域内时，我们没有 `await` 操作。如果我们这样做，我们的线程可能会上下文切换到另一个任务，而现有任务仍然持有对数据的引用。
+
+我们可以通过在不安全代码中向数千个异步任务暴露一个哈希映射，并在每个任务中增加某个键的值来测试这一点。要运行此测试，我们需要以下导入：
+
+```rust
+use tokio_util::task::LocalPoolHandle;
+use std::time::Instant;
+use std::cell::UnsafeCell;
+use std::collections::HashMap;
+```
+
+然后我们定义我们的线程状态：
+
+```rust
+use std::cell::UnsafeCell;
+use std::collections::HashMap;
+thread_local! {
+    pub static COUNTER: UnsafeCell<HashMap<u32, u32>> = UnsafeCell::new
+    (HashMap::new())
+}
+```
+
+接下来，我们可以定义我们的异步任务，该任务将使用不安全代码访问和更新线程数据：
+
+```rust
+async fn something(number: u32) {
+    tokio::time::sleep(std::time::Duration::from_secs(number as u64)).await;
+    COUNTER.with(|counter| {
+        let counter = unsafe { &mut *counter.get() };
+        match counter.get_mut(&number) {
+            Some(count) => {
+                let placeholder = *count + 1;
+                *count = placeholder;
+            },
+            None => {
+                counter.insert(number, 1);
+            }
+        }
+    });
+}
+```
+
+我们加入了一个 Tokio 睡眠，其持续时间为输入的数字，以打乱异步任务访问线程数据的顺序。然后我们获取数据的可变引用并执行操作。注意我们访问数据的 `COUNTER.with` 块。这不是一个异步块，意味着我们在访问数据时不能使用 `await` 操作。在访问不安全数据时，我们无法上下文切换到另一个异步任务。在 `COUNTER.with` 块内部，我们使用不安全代码直接访问数据并增加计数。
+
+测试完成后，我们需要打印出线程状态。因此，我们需要将一个异步任务传递到线程中执行打印操作，其形式如下：
+
+```rust
+async fn print_statement() {
+    COUNTER.with(|counter| {
+        let counter = unsafe { &mut *counter.get() };
+        println!("Counter: {:?}", counter);
+    });
+}
+```
+
+我们现在有了一切，所以我们需要做的就是在我们的主异步函数中运行我们的代码。首先，我们设置我们的本地线程池，它只有一个线程，以及 10 万个 1 到 5 的序列：
+
+```rust
+let pool = LocalPoolHandle::new(1);
+let sequence = [1, 2, 3, 4, 5];
+let repeated_sequence: Vec<_> = sequence.iter()
+    .cycle()
+    .take(100000)
+    .cloned()
+    .collect();
+```
+
+这给了我们 50 万个具有不同 Tokio 睡眠持续时间的异步任务，我们将把它们扔到这个单线程中。然后我们遍历这些数字，分拆任务，每个任务调用我们的异步函数两次，这样发送到线程的任务会使线程在每个函数内部和函数之间进行上下文切换：
+
+```rust
+let mut futures = Vec::new();
+for number in repeated_sequence {
+    futures.push(pool.spawn_pinned(move || async move {
+        something(number).await;
+        something(number).await
+    }));
+}
+```
+
+我们确实鼓励线程在处理任务时进行多次上下文切换。这种上下文切换，加上不同的睡眠持续时间和高总任务数，如果我们在访问数据时发生冲突，将导致计数结果不一致。最后，我们遍历句柄，等待它们全部完成以确保所有异步任务都已执行，并使用以下代码打印计数：
+
+```rust
+for i in futures {
+    let _ = i.await.unwrap();
+}
+let _ = pool.spawn_pinned(|| async {
+    print_statement().await
+}).await.unwrap();
+```
+
+最终结果应如下：
+
+```
+Counter: {2: 200000, 4: 200000, 1: 200000, 3: 200000, 5: 200000}
+```
+
+无论我们运行多少次，计数都将始终相同。在这里，我们不必执行诸如比较和交换之类的原子操作，也不必在发生不一致时进行多次尝试。我们也不需要等待锁。我们甚至不需要在获取数据的可变引用之前检查是否存在任何可变引用。在这种上下文下，我们的不安全代码是安全的。
+
+我们现在可以使用线程的状态来影响我们的异步任务。但是，如果我们的系统关闭了会发生什么？我们可能希望有一个清理过程，以便在再次启动运行时可以重新创建我们的状态。这就是优雅关闭发挥作用的地方。
+
+### 优雅关闭
+
+在优雅关闭中，我们在程序关闭时捕获信号，以便在程序退出前执行一系列进程。这些进程可以是向其他程序发送信号、存储状态、清理事务，以及任何你想在程序退出前做的其他事情。
+
+我们对此主题的第一个探索可以是 Ctrl-C 信号。通常，当我们通过终端运行 Rust 程序时，我们可以通过按 Ctrl-C 来停止程序，提示程序退出。但是，我们可以用 `tokio::signal` 模块覆盖这种抢先退出。为了真正证明我们已经覆盖了 Ctrl-C 信号，我们可以构建一个简单的程序，它必须接受 Ctrl-C 信号三次后才退出程序。我们可以通过构建后台异步任务来实现这一点，如下所示：
+
+```rust
+async fn cleanup() {
+    println!("清理后台任务已启动");
+    let mut count = 0;
+    loop {
+        tokio::signal::ctrl_c().await.unwrap();
+        println!("收到 ctrl-c 信号!");
+        count += 1;
+        if count > 2 {
+            std::process::exit(0);
+        }
+    }
+}
+```
+
+接下来，我们可以运行后台任务并无限循环，使用以下主函数：
+
+```rust
+#[tokio::main]
+async fn main() {
+    tokio::spawn(cleanup());
+    loop {
+    }
+}
+```
+
+运行我们的程序时，如果我们按三次 Ctrl-C，我们将得到以下打印输出：
+
+```
+清理后台任务已启动
+^C收到 ctrl-c 信号!
+^C收到 ctrl-c 信号!
+^C收到 ctrl-c 信号!
+```
+
+我们的程序在发送三次信号后才退出。现在我们可以按照自己的意愿退出程序。然而，在我们继续之前，让我们在后台任务的循环中添加一个阻塞睡眠，然后再等待 Ctrl-C 信号，给出以下循环：
+
+```rust
+loop {
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    tokio::signal::ctrl_c().await.unwrap();
+    // ...
+}
+```
+
+如果我们再次运行程序，在 5 秒过去之前按 Ctrl-C，程序将退出。由此，我们可以推断，只有当我们的程序直接等待信号时，它才会按照我们想要的方式处理 Ctrl-C 信号。我们可以通过生成一个管理异步运行时的线程来解决这个问题。然后使用主线程的其余部分来监听信号：
+
+```rust
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
+    std::thread::spawn(|| {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+        runtime.block_on(async { println!("Hello, world!"); });
+    });
+    let mut count = 0;
+    loop {
+        tokio::signal::ctrl_c().await.unwrap();
+        println!("收到 ctrl-c 信号!");
+        count += 1;
+        if count > 2 {
+            std::process::exit(0);
+        }
+    }
+}
+```
+
+现在，无论我们的异步运行时在处理什么，我们的主线程都准备好响应 Ctrl-C 信号，但是我们的状态呢？在清理过程中，我们可以提取当前状态，然后将其写入文件，以便在程序再次启动时可以加载状态。读写文件很简单，所以我们将重点放在从上一节构建的所有隔离线程中提取状态。与上一节的主要区别在于，我们将把任务分配到四个隔离线程上。首先，我们可以将本地线程池包装在惰性求值中：
+
+```rust
+static RUNTIME: LazyLock<LocalPoolHandle> = LazyLock::new(|| {
+    LocalPoolHandle::new(4)
+});
+```
+
+我们需要定义提取线程状态的异步任务：
+
+```rust
+fn extract_data_from_thread() -> HashMap<u32, u32> {
+    let mut extracted_counter: HashMap<u32, u32> = HashMap::new();
+    COUNTER.with(|counter| {
+        let counter = unsafe { &mut *counter.get() };
+        extracted_counter = counter.clone();
+    });
+    return extracted_counter
+}
+```
+
+我们可以通过每个线程发送此任务，这为我们提供了一种非阻塞的方式来对整个系统的总计数求和（图 7-3）。
+
+**图 7-3. 从所有线程提取状态的流程**
+
+我们可以使用以下代码实现图 7-3 中规划的过程：
+
+```rust
+async fn get_complete_count() -> HashMap<u32, u32> {
+    let mut complete_counter = HashMap::new();
+    let mut extracted_counters = Vec::new();
+    for i in 0..4 {
+        extracted_counters.push(RUNTIME.spawn_pinned_by_idx(|| async move {
+            extract_data_from_thread()
+        }, i));
+    }
+    for counter_future in extracted_counters {
+        let extracted_counter = counter_future.await.unwrap_or_default();
+        for (key, count) in extracted_counter {
+            *complete_counter.entry(key).or_insert(0) += count;
+        }
+    }
+    return complete_counter
+}
+```
+
+我们调用 `spawn_pinned_by_idx` 以确保我们只向每个线程发送一个 `extract_data_from_thread` 任务。
+
+我们现在准备好运行我们的系统，使用以下主函数：
+
+```rust
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
+    let _handle = tokio::spawn( async {
+        // ...
+    });
+    tokio::signal::ctrl_c().await.unwrap();
+    println!("收到 ctrl-c 信号!");
+    let complete_counter = get_complete_count().await;
+    println!("完整计数器: {:?}", complete_counter);
+}
+```
+
+我们在 `tokio::spawn` 内生成任务以增加计数：
+
+```rust
+let sequence = [1, 2, 3, 4, 5];
+let repeated_sequence: Vec<_> = sequence.iter().cycle().take(500000)
+    .cloned()
+    .collect();
+
+let mut futures = Vec::new();
+for number in repeated_sequence {
+    futures.push(RUNTIME.spawn_pinned(move || async move {
+        something(number).await;
+        something(number).await
+    }));
+}
+for i in futures {
+    let _ = i.await.unwrap();
+}
+println!("所有期物已完成");
+```
+
+我们的系统现在已经可以运行了。如果我们运行程序直到在按 Ctrl-C 之前看到所有期物完成的打印输出，我们会得到以下打印输出：
+
+```
+完整计数器: {1: 200000, 4: 200000, 2: 200000, 5: 200000, 3: 200000}
+```
+
+因为我们知道我们只使用 `spawn_pinned_by_idx` 函数向每个线程发送了一个提取任务，并且我们的总计数与我们通过一个线程运行所有任务时相同，所以我们可以得出结论，我们的数据提取是准确的。如果我们在期物完成之前按 Ctrl-C，我们应该会得到类似于这样的打印输出：
+
+```
+完整计数器: {2: 100000, 3: 32290, 1: 200000}
+```
+
+我们在程序完成之前退出了，我们得到了当前状态。如果我们愿意，我们的状态现在可以在退出前被写入。
+
+虽然我们的代码便于在按 Ctrl-C 时进行清理，但这个信号并不总是关闭系统的最实用方法。例如，我们可能让异步系统在后台运行，这样终端就不与程序绑定。我们可以通过向系统发送 `SIGHUP` 信号来关闭程序。要监听 `SIGHUP` 信号，我们需要以下导入：
+
+```rust
+use tokio::signal::unix::{signal, SignalKind};
+```
+
+然后我们可以替换主函数底部的 Ctrl-C 代码，如下所示：
+
+```rust
+let pid = std::process::id();
+println!("此进程的 PID 是: {}", pid);
+let mut stream = signal(SignalKind::hangup()).unwrap();
+stream.recv().await;
+let complete_counter = get_complete_count().await;
+println!("完整计数器: {:?}", complete_counter);
+```
+
+我们打印出 PID，以便知道使用以下命令向哪个 PID 发送信号：
+
+```bash
+kill -SIGHUP <pid>
+```
+
+运行 kill 命令时，你应该得到与按 Ctrl-C 时类似的结果。现在我们可以说，你知道如何以运行时配置、任务运行和运行时关闭的方式来自定义 Tokio 了。
+
+### 总结
+
+在本章中，我们深入探讨了设置 Tokio 运行时的具体细节，以及其设置如何影响其运行方式。通过这些细节，我们真正控制了运行时的worker数量、阻塞线程数量以及在接受新任务轮询之前执行的 tick 次数。我们还探索了在同一程序中定义不同的运行时，这样我们可以选择将任务发送到哪个运行时。请记住，当 Tokio 运行时的线程不被使用时，它们会被停放，所以如果一个 Tokio 运行时没有被持续使用，我们不会浪费资源。
+
+然后，我们使用本地池控制了线程处理任务的方式。我们甚至在 Tokio 运行时中测试了对线程状态的不安全访问，以证明在任务中访问线程状态是安全的。最后，我们介绍了优雅关闭。尽管我们不必编写自己的样板代码，但 Tokio 仍然为我们提供了非常灵活地配置运行时的能力。我们毫不怀疑，在你的异步 Rust 职业生涯中，你会遇到使用 Tokio 的代码库。你现在应该能够自如地在代码库中自定义 Tokio 运行时，并管理异步任务的处理方式。在第 8 章中，我们将以实现演员模型来解决异步问题，这种方式是模块化的。
+
+## 第八章 参与者模型
+
+*参与者*（Actors）是独立的代码片段，它们**仅通过消息传递进行通信**。参与者也可以拥有状态，它们可以引用和修改该状态。因为我们有异步兼容的非阻塞通道，所以我们的异步运行时可以同时处理多个参与者，仅当它们在自己的通道中收到消息时才推进这些参与者。
+
+参与者的隔离使得异步测试变得简单，也简化了异步系统的实现。在本章结束时，你将能够构建一个具有路由器参与者的参与者系统。你构建的这个参与者系统可以轻松地在程序的任何地方被调用，而无需为了你的参与者系统到处传递引用。你还将能够构建一个监督者心跳系统，该系统将跟踪其他参与者，并在它们未能在时间阈值内 ping 通监督者时强制重启这些参与者。要开始这段旅程，你需要了解如何构建基本的参与者。
+
+### 构建一个基本参与者
+
+我们能构建的最基本的参与者是一个无限循环的异步函数，它监听消息：
+
+```rust
+use tokio::sync::{
+    mpsc::channel,
+    mpsc::{Receiver, Sender},
+    oneshot
+};
+
+struct Message {
+    value: i64
+}
+
+async fn basic_actor(mut rx: Receiver<Message>) {
+    let mut state = 0;
+
+    while let Some(msg) = rx.recv().await {
+        state += msg.value;
+        println!("Received: {}", msg.value);
+        println!("State: {}", state);
+    }
+}
+```
+
+该参与者使用多生产者单消费者通道（`mpsc`）监听传入的消息，更新状态，然后将其打印出来。我们可以按如下方式测试我们的参与者：
+
+```rust
+#[tokio::main]
+async fn main() {
+    let (tx, rx) = channel::<Message>(100);
+
+    let _actor_handle = tokio::spawn(
+        basic_actor(rx)
+    );
+    for i in 0..10 {
+        let msg = Message { value: i };
+        tx.send(msg).await.unwrap();
+    }
+}
+```
+
+但是，如果我们想收到响应怎么办？现在，我们发送消息到虚无中，并查看终端中的打印输出。我们可以通过将 `oneshot::Sender` 打包到发送给参与者的消息中来促成响应。接收消息的参与者随后可以使用该 `oneshot::Sender` 来发送响应。我们可以用以下代码定义我们的响应参与者：
+
+```rust
+struct RespMessage {
+    value: i32,
+    responder: oneshot::Sender<i64>
+}
+
+async fn resp_actor(mut rx: Receiver<RespMessage>) {
+    let mut state = 0;
+
+    while let Some(msg) = rx.recv().await {
+        state += msg.value;
+        if msg.responder.send(state).is_err() {
+            println!("Failed to send response");
+        }
+    }
+}
+```
+
+如果我们想向我们的响应参与者发送消息，我们必须构造一个 `oneshot` 通道，用它来构造消息，发送消息，然后等待响应。以下代码描述了一个如何实现这一点的基本示例：
+
+```rust
+let (tx, rx) = channel::<RespMessage>(100);
+
+let _resp_actor_handle = tokio::spawn(async {
+    resp_actor(rx).await;
+});
+for i in 0..10 {
+    let (resp_tx, resp_rx) = oneshot::channel::<i64>();
+    let msg = RespMessage {
+        value: i,
+        responder: resp_tx
+    };
+    tx.send(msg).await.unwrap();
+    println!("Response: {}", resp_rx.await.unwrap());
+}
+```
+
+这里，我们使用 `oneshot` 通道，因为响应只需要发送一次，然后客户端代码就可以继续做其他事情。这是我们用例的最佳选择，因为 `oneshot` 通道在内存和同步方面针对仅发送一条消息然后关闭的用例进行了优化。
+
+考虑到我们通过通道向参与者发送结构体，你可以看到我们的功能复杂性可以增加。例如，发送一个封装了多种消息的枚举可以指示参与者根据发送的消息类型执行一系列操作。参与者还可以创建新的参与者或向其他参与者发送消息。
+
+从我们展示的示例来看，我们也可以直接使用互斥锁并在修改状态时获取它。互斥锁编写起来很简单，但它与参与者相比如何呢？
+
+### 参与者与互斥锁的对比
+
+为了这个练习，我们需要这些额外的导入：
+
+```rust
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::sync::mpsc::error::TryRecvError;
+```
+
+要用互斥锁重现我们之前部分参与者的功能，我们有一个函数，其形式如下：
+
+```rust
+async fn actor_replacement(state: Arc<Mutex<i64>>, value: i64) -> i64 {
+    let mut state = state.lock().await;
+    *state += value;
+    return *state
+}
+```
+
+虽然这写起来很简单，但在性能方面表现如何？我们可以设计一个简单的测试：
+
+```rust
+let state = Arc::new(Mutex::new(0));
+let mut handles = Vec::new();
+
+let now = tokio::time::Instant::now();
+
+for i in 0..100000000 {
+    let state_ref = state.clone();
+    let future = async move {
+        let handle = tokio::spawn(async move {
+            actor_replacement(state_ref, i).await
+        });
+        let _ = handle.await.unwrap();
+    };
+    handles.push(tokio::spawn(future));
+}
+
+for handle in handles {
+    let _ = handle.await.unwrap();
+}
+
+println!("Elapsed: {:?}", now.elapsed());
+```
+
+我们一次性产生了大量任务，试图获取互斥锁，然后等待它们完成。如果我们一次只产生一个任务，我们将无法获得互斥锁的并发性对结果的真正影响。相反，我们只会得到单个事务的速度。我们运行大量任务是因为我们想看到不同方法之间在统计上显著的差异。
+
+这些测试运行需要很长时间，但结果不会产生误解。在撰写本文时，在一台高规格的 M2 MacBook 上以 `--release` 模式运行代码，所有互斥锁任务完成所需的时间是 155 秒。
+
+要用我们在上一节中的参与者运行相同的测试，我们需要以下代码：
+
+```rust
+let (tx, rx) = channel::<RespMessage>(100000000);
+let _resp_actor_handle = tokio::spawn(async {
+    resp_actor(rx).await;
+});
+
+let mut handles = Vec::new();
+
+let now = tokio::time::Instant::now();
+for i in 0..100000000 {
+    let tx_ref = tx.clone();
+
+    let future = async move {
+        let (resp_tx, resp_rx) = oneshot::channel::<i64>();
+        let msg = RespMessage {
+            value: i,
+            responder: resp_tx
+        };
+        tx_ref.send(msg).await.unwrap();
+        let _ = resp_rx.await.unwrap();
+    };
+    handles.push(tokio::spawn(future));
+}
+
+for handle in handles {
+    let _ = handle.await.unwrap();
+}
+
+println!("Elapsed: {:?}", now.elapsed());
+```
+
+在撰写本文时，运行此测试需要 103 秒。请注意，我们在 `--release` 模式下运行测试，以查看编译器优化对系统的影响。参与者快了 52 秒。一个原因是获取互斥锁的开销。将消息放入通道时，我们必须检查通道是否已满或已关闭。而获取互斥锁时，检查更为复杂。这些检查通常涉及检查锁是否被另一个任务持有。如果是，则尝试获取锁的任务需要注册兴趣并等待被通知。
+
+通常，在并发环境中，通过通道传递消息比使用互斥锁扩展性更好，因为发送者不必等待其他任务完成它们正在做的事情。它们可能需要等待将消息放入通道队列，但等待消息放入队列比等待一个操作完成与互斥锁的操作、释放锁，然后等待任务获取锁要快。因此，通道可以实现更高的吞吐量。
+
+为了进一步说明这一点，让我们探讨一个场景，其中事务比仅仅将值加一更复杂。也许在将最终结果提交到状态并返回数字之前，我们需要进行一些检查和计算。作为高效的工程师，我们可能希望在该过程发生时做其他事情。因为我们发送消息并等待响应，所以使用参与者代码时我们已经有这个便利，如下所示：
+
+```rust
+let future = async move {
+    let (resp_tx, resp_rx) = oneshot::channel::<i32>();
+    let msg = RespMessage {
+        value: i,
+        responder: resp_tx
+    };
+    tx_ref.send(msg).await.unwrap();
+    // 做点别的事
+    let _ = resp_rx.await.unwrap();
+};
+```
+
+然而，我们的互斥锁实现只会将控制权交还给调度器。如果我们希望在等待复杂事务完成的同时推进我们的互斥锁任务，我们将不得不生成另一个异步任务，如下所示：
+
+```rust
+async fn actor_replacement(state: Arc<Mutex<i32>>, value: i32) -> i32 {
+    let update_handle = tokio::spawn(async move {
+        let mut state = state.lock().await;
+        *state += value;
+        return *state
+    });
+    // 做点别的事
+    update_handle.await.unwrap()
+}
+```
+
+然而，生成这些额外异步任务的开销使我们测试的运行时间增加到 174 秒。这比实现相同功能的参与者多了 73 秒。这并不奇怪，因为我们向运行时发送一个异步任务并取回一个句柄，只是为了允许我们在任务后面等待事务结果。
+
+考虑到我们的测试结果，你可以明白为什么我们想使用参与者。参与者编写起来更复杂。你需要通过通道传递消息，并为参与者的响应打包一个 `oneshot` 通道，仅仅是为了获取结果。这比获取锁更复杂。然而，选择何时等待该消息结果的灵活性在参与者中是自然而然的。另一方面，如果希望获得这种灵活性，互斥锁会有很大的性能损失。
+
+我们还可以认为参与者更容易概念化。如果我们思考一下，参与者包含它们的状态。如果你想查看与该状态的所有交互，你可以查看参与者代码。然而，对于使用互斥锁的代码库，我们不知道与状态的所有交互发生在哪里。与互斥锁的分布式交互也增加了它在整个系统中高度耦合的风险，使得重构变得头疼。
+
+现在我们已经让参与者正常工作了，我们需要能够在系统中使用它们。将参与者以最小化影响集成到系统中的最简单方法是使用路由器模式。
+
+### 实现路由器模式
+
+对于我们的路由，我们构造一个路由器参与者，它接受消息。这些消息可以包装在枚举中，以帮助我们的路由器定位正确的参与者。对于我们的示例，我们将实现一个基本的键值存储。我们必须强调，虽然我们在 Rust 中构建键值存储，但你不应将此教学示例用于生产环境。像 RocksDB 和 Redis 这样成熟的解决方案已经投入了大量工作和专业知识来使它们的键值存储健壮且可扩展。
+
+对于我们的键值存储，我们需要设置、获取和删除键。我们可以通过图 8-1 定义的消息布局来发出所有这些操作的信号。
+
+**图 8-1. 路由器参与者消息的枚举结构**
+
+在我们编写任何代码之前，我们需要以下导入：
+
+```rust
+use tokio::sync::{
+    mpsc::channel,
+    mpsc::{Receiver, Sender},
+    oneshot,
+};
+use std::sync::OnceLock;
+```
+
+我们还需要定义图 8-1 中所示的消息布局：
+
+```rust
+struct SetKeyValueMessage {
+    key: String,
+    value: Vec<u8>,
+    response: oneshot::Sender<()>,
+}
+
+struct GetKeyValueMessage {
+    key: String,
+    response: oneshot::Sender<Option<Vec<u8>>>,
+}
+
+struct DeleteKeyValueMessage {
+    key: String,
+    response: oneshot::Sender<()>,
+}
+
+enum KeyValueMessage {
+    Get(GetKeyValueMessage),
+    Delete(DeleteKeyValueMessage),
+    Set(SetKeyValueMessage),
+}
+
+enum RoutingMessage {
+    KeyValue(KeyValueMessage),
+}
+```
+
+我们现在有一个可以路由到键值参与者的消息，并且该消息用执行操作所需的数据发出了正确操作的信号。对于我们的键值参与者，我们接受 `KeyValueMessage`，匹配其变体，并执行操作，如下所示：
+
+```rust
+async fn key_value_actor(mut receiver: Receiver<KeyValueMessage>) {
+    let mut map = std::collections::HashMap::new();
+    while let Some(message) = receiver.recv().await {
+        match message {
+            KeyValueMessage::Get(
+                GetKeyValueMessage { key, response }
+            ) => {
+                let _ = response.send(map.get(&key).cloned());
+            }
+            KeyValueMessage::Delete(
+                DeleteKeyValueMessage { key, response }
+            ) => {
+                map.remove(&key);
+                let _ = response.send(());
+            }
+            KeyValueMessage::Set(
+                SetKeyValueMessage { key, value, response }
+            ) => {
+                map.insert(key, value);
+                let _ = response.send(());
+            }
+        }
+    }
+}
+```
+
+有了对键值消息的处理，我们需要将键值参与者与路由器参与者连接起来：
+
+```rust
+async fn router(mut receiver: Receiver<RoutingMessage>) {
+    let (key_value_sender, key_value_receiver) = channel(32);
+    tokio::spawn(key_value_actor(key_value_receiver));
+    while let Some(message) = receiver.recv().await {
+        match message {
+            RoutingMessage::KeyValue(message) => {
+                let _ = key_value_sender.send(message).await;
+            }
+        }
+    }
+}
+```
+
+我们在路由器参与者内部创建键值参与者。参与者可以创建其他参与者。将键值参与者的创建放在路由器参与者内部，确保了系统设置永远不会出错。它还减少了我们程序中参与者系统设置的复杂性。路由器是我们的接口，因此所有内容都将通过路由器到达其他参与者。
+
+现在路由器已经定义好了，我们必须把注意力转向该路由器的通道。所有发送到我们参与者系统的消息都将通过该通道。我们任意选择了数字 32；这意味着该通道一次最多可以容纳 32 条消息。这个缓冲区大小给了我们一些灵活性。
+
+如果我们必须跟踪对该通道发送者的引用，那么系统将不是很有用。如果一个开发者想向我们的参与者系统发送消息，而他们处于四层深度，想象一下如果不得不将他们正在使用的函数追溯回主函数，为通向他们正在工作的函数的每个函数打开一个用于通道发送者的参数，他们会感到多么沮丧。以后进行更改同样会令人沮丧。为了避免这种挫败感，我们将发送者定义为全局静态变量：
+
+```rust
+static ROUTER_SENDER: OnceLock<Sender<RoutingMessage>> = OnceLock::new();
+```
+
+当我们为路由器创建主通道时，我们将设置发送者。你可能想知道在路由器参与者函数内部构造主通道并设置 `ROUTER_SENDER` 是否更符合人体工程学。然而，如果在通道设置之前，函数试图向主通道发送消息，可能会出现一些并发问题。记住，异步运行时可以跨多个线程，所以有可能在路由器参与者尝试设置通道时，一个异步任务正试图调用该通道。因此，最好在主函数开始之前设置通道，然后再生成任何任务。这样，即使路由器参与者不是异步运行时上第一个被轮询的任务，它仍然可以访问在被轮询之前发送到通道的消息。
+
+**注意全局静态变量的使用**
+
+我们使用了一个带有 `OnceLock` 的全局变量（`ROUTER_SENDER`）来简化示例，并避免用额外的设置代码使本章显得杂乱。虽然这种方法保持代码简单明了，但重要的是要意识到在异步 Rust 代码中使用全局状态的潜在缺点：
+
+*   **脆弱性**：全局状态可能导致难以追踪的错误，尤其是在大型或复杂的应用程序中。如果全局状态被意外修改，可能会导致意想不到的副作用。
+*   **测试困难**：测试依赖于全局状态的代码可能更具挑战性。测试可能变得依赖于它们的运行顺序，或者可能相互干扰。
+*   **资源管理**：使用全局状态时，资源（如发送者通道）的生命周期管理变得更加复杂。
+
+为了防止这种情况，你可以在主函数开始时创建通道，并将 `Sender` 传递给参与者，然后参与者可以传递 `Sender` 给其他参与者，因为我们可以克隆 `Sender` 结构体，如下所示：
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), std::io::Error> {
+    let (sender, receiver) = channel(32);
+    tokio::spawn(router(receiver, sender.clone()));
+    // ...
+}
+```
+
+在本章中，由于我们需要跟踪很多活动部分，我们将省略这种全局变量的方法。
+
+我们的路由器参与者现在准备好接收消息并将其路由到我们的键值存储。我们需要一些能够发送键值消息的函数。我们可以从我们的 `set` 函数开始，该函数由以下代码定义：
+
+```rust
+pub async fn set(key: String, value: Vec<u8>) -> Result<(), std::io::Error> {
+    let (tx, rx) = oneshot::channel();
+    ROUTER_SENDER.get().unwrap().send(
+        RoutingMessage::KeyValue(KeyValueMessage::Set(
+            SetKeyValueMessage {
+                key,
+                value,
+                response: tx,
+            }))).await.unwrap();
+    rx.await.unwrap();
+    Ok(())
+}
+```
+
+这段代码有很多 `unwrap`，但如果由于通道错误导致我们的系统失败，那我们就有更大的问题了。这些 `unwrap` 仅仅是为了避免本章中的代码膨胀。我们将在第 170 页的“创建参与者监督”中介绍错误处理。我们可以看到，我们的路由消息是自解释的。我们知道它是一个路由消息，并且该消息被路由到键值参与者。然后我们知道我们在键值参与者中调用了哪个方法以及传入的数据。路由消息枚举提供了足够的信息来告诉我们消息的预定路由。
+
+现在我们的 `set` 函数已经定义好了，你或许可以自己构建 `get` 函数。试一试。
+
+希望你的 `get` 函数与下面的类似：
+
+```rust
+pub async fn get(key: String) -> Result<Option<Vec<u8>>, std::io::Error> {
+    let (tx, rx) = oneshot::channel();
+    ROUTER_SENDER.get().unwrap().send(
+        RoutingMessage::KeyValue(KeyValueMessage::Get(
+            GetKeyValueMessage {
+                key,
+                response: tx,
+            }))).await.unwrap();
+    Ok(rx.await.unwrap())
+}
+```
+
+我们的 `delete` 函数与 `get` 几乎相同，除了不同的路由以及 `delete` 函数不返回任何内容：
+
+```rust
+pub async fn delete(key: String) -> Result<(), std::io::Error> {
+    let (tx, rx) = oneshot::channel();
+    ROUTER_SENDER.get().unwrap().send(
+        RoutingMessage::KeyValue(KeyValueMessage::Delete(
+            DeleteKeyValueMessage {
+                key,
+                response: tx,
+            }))).await.unwrap();
+    rx.await.unwrap();
+    Ok(())
+}
+```
+
+我们的系统已经准备好了。我们可以用主函数来测试我们的路由器和键值存储：
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), std::io::Error> {
+    let (sender, receiver) = channel(32);
+    ROUTER_SENDER.set(sender).unwrap();
+    tokio::spawn(router(receiver));
+
+    let _ = set("hello".to_owned(), b"world".to_vec()).await;
+    let value = get("hello".to_owned()).await;
+    println!("Value: {:?}", String::from_utf8(value.unwrap().unwrap()));
+    let _ = delete("hello".to_owned()).await;
+    let value = get("hello".to_owned()).await;
+    println!("Value: {:?}", value);
+    Ok(())
+}
+```
+
+代码给出以下打印输出：
+
+```
+value: Ok("world")
+value: None
+```
+
+我们的键值存储正常工作且可运行。然而，当我们的系统关闭或崩溃时会发生什么？我们需要一个能够跟踪状态并在重启系统时恢复它的参与者。
+
+### 为参与者实现状态恢复
+
+现在我们的系统有一个键值存储参与者。然而，我们的系统可能会停止并重新启动，或者参与者可能崩溃。如果发生这种情况，我们可能会丢失所有数据，这很糟糕。为了降低数据丢失的风险，我们将创建另一个参与者，将我们的数据写入文件。我们新系统的概要如图 8-2 所示。
+
+**图 8-2. 一个写入者备份参与者系统**
+
+从图 8-2 中，我们可以看到执行的步骤如下：
+
+1.  向我们的参与者系统发出调用。
+2.  路由器将消息发送给键值存储参与者。
+3.  我们的键值存储参与者克隆该操作，并将该操作发送给写入者参与者。
+4.  写入者参与者对其自己的映射执行该操作，并将映射写入数据文件。
+5.  键值存储对其自己的映射执行该操作，并将结果返回给调用参与者系统的代码。
+
+当我们的参与者系统启动时，我们将有以下顺序：
+
+1.  我们的路由器参与者启动，创建我们的键值存储参与者。
+2.  我们的键值存储参与者创建我们的写入者参与者。
+3.  当我们的写入者参与者启动时，它从文件读取数据，填充自身，并将数据发送给键值存储参与者。
+
+我们授予写入者参与者对数据文件的独占访问权。这将避免并发问题，因为写入者参与者一次只能处理一个事务，并且没有其他资源会修改文件。写入者对文件的独占性也可以为我们带来性能提升，因为写入者参与者可以在其整个生命周期内保持数据文件的文件句柄打开，而不是为每次写入打开文件。这大大减少了向操作系统请求权限和检查文件可用性的调用次数。
+
+对于这个系统，我们需要更新键值参与者的初始化代码。我们还需要构建写入者参与者，并为写入者参与者添加一个新的消息，该消息可以从键值消息构造。
+
+在编写任何新代码之前，我们需要以下导入：
+
+```rust
+use serde_json;
+use tokio::fs::File;
+use tokio::io::{
+    self,
+    AsyncReadExt,
+    AsyncWriteExt,
+    AsyncSeekExt
+};
+use std::collections::HashMap;
+```
+
+对于我们的写入者消息，我们需要写入者设置和删除值。然而，我们还需要写入者返回从文件读取的完整状态，这给了我们以下定义：
+
+```rust
+enum WriterLogMessage {
+    Set(String, Vec<u8>),
+    Delete(String),
+    Get(oneshot::Sender<HashMap<String, Vec<u8>>>),
+}
+```
+
+我们需要从键值消息构造此消息而不消耗它：
+
+```rust
+impl WriterLogMessage {
+    fn from_key_value_message(message: &KeyValueMessage)
+        -> Option<WriterLogMessage> {
+        match message {
+            KeyValueMessage::Get(_) => None,
+            KeyValueMessage::Delete(message) => Some(
+                WriterLogMessage::Delete(message.key.clone())
+            ),
+            KeyValueMessage::Set(message) => Some(
+                WriterLogMessage::Set(
+                    message.key.clone(),
+                    message.value.clone())
+            )
+        }
+    }
+}
+```
+
+我们的消息定义现在已经完成。在编写写入者参与者之前，我们只需要再一个功能：状态的加载。我们需要两个参与者在启动时加载状态，因此我们的文件加载由以下独立函数定义：
+
+```rust
+async fn read_data_from_file(file_path: &str)
+    -> io::Result<HashMap<String, Vec<u8>>> {
+    let mut file = File::open(file_path).await;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).await;
+    let data: HashMap<String, Vec<u8>> = serde_json::from_str(
+        &contents
+    );
+    Ok(data)
+}
+```
+
+虽然这可以工作，但我们需要状态的加载具有容错性。在参与者关闭之前恢复其状态是好的，但如果参与者因为无法从丢失或损坏的状态文件加载而根本无法运行，那么我们的系统就不会很好。因此，我们将加载包装在一个函数中，如果在加载状态时出现问题，该函数将返回一个空哈希映射：
+
+```rust
+async fn load_map(file_path: &str) -> HashMap<String, Vec<u8>> {
+    match read_data_from_file(file_path).await {
+        Ok(data) => {
+            println!("Data loaded from file: {:?}", data);
+            return data
+        },
+        Err(e) => {
+            println!("Failed to read from file: {:?}", e);
+            println!("Starting with an empty hashmap.");
+            return HashMap::new()
+        }
+    }
+}
+```
+
+我们打印出来，以便在未获得预期结果时检查系统的日志。
+
+我们现在准备构建我们的写入者参与者。我们的写入者参与者需要从文件加载数据，然后监听传入的消息：
+
+```rust
+async fn writer_actor(mut receiver: Receiver<WriterLogMessage>)
+    -> io::Result<()> {
+    let mut map = load_map("./data.json").await;
+    let mut file = File::create("./data.json").await.unwrap();
+
+    while let Some(message) = receiver.recv().await {
+        // ...
+        let contents = serde_json::to_string(&map).unwrap();
+        file.set_len(0).await;
+        file.seek(std::io::SeekFrom::Start(0)).await;
+        file.write_all(contents.as_bytes()).await;
+        file.flush().await;
+    }
+    Ok(())
+}
+```
+
+你可以看到，我们在每个消息周期之间清空文件并写入整个映射。这不是一种有效的写入文件方式。然而，本章的重点是参与者以及如何使用它们。关于将事务写入文件的权衡是一个涉及各种文件类型、批量写入和用于清理数据的垃圾回收的大主题。如果你对此感兴趣，Alex Petrov 的《数据库内幕》（Database Internals）提供了关于将事务写入文件的全面介绍。
+
+在写入者参与者的消息匹配中，我们插入、移除或克隆然后返回整个映射：
+
+```rust
+match message {
+    WriterLogMessage::Set(key, value) => {
+        map.insert(key, value);
+    }
+    WriterLogMessage::Delete(key) => {
+        map.remove(&key);
+    },
+    WriterLogMessage::Get(response) => {
+        let _ = response.send(map.clone());
+    }
+}
+```
+
+虽然我们的路由器参与者保持不变，但我们的键值参与者需要在做任何其他事情之前创建写入者参与者：
+
+```rust
+let (writer_key_value_sender, writer_key_value_receiver) = channel(32);
+tokio::spawn(writer_actor(writer_key_value_receiver));
+```
+
+我们的键值参与者然后需要从写入者参与者获取映射的状态：
+
+```rust
+let (get_sender, get_receiver) = oneshot::channel();
+let _ = writer_key_value_sender.send(WriterLogMessage::Get(
+    get_sender
+)).await;
+let mut map = get_receiver.await.unwrap();
+```
+
+最后，键值参与者可以构造一个写入者消息，并将其发送给写入者参与者，然后再处理事务本身：
+
+```rust
+while let Some(message) = receiver.recv().await {
+    if let Some(
+        write_message
+    ) = WriterLogMessage::from_key_value_message(
+        &message) {
+        let _ = writer_key_value_sender.send(
+            write_message
+        ).await;
+    }
+    match message {
+        // ...
+    }
+}
+```
+
+有了这些，我们的系统支持从文件写入和加载，而所有的键值事务都在内存中处理。如果你在主函数中操作你的代码，注释掉一些部分并检查 `data.json` 文件，你会发现它是有效的。然而，如果你的系统运行在像服务器这样的设备上，你可能不会手动监控文件以了解情况。现在我们的参与者系统变得更加复杂，写入者参与者可能已经崩溃且未运行，但我们对此一无所知，因为键值参与者可能仍在运行。这就是监督发挥作用的地方，因为我们需要跟踪参与者的状态。
+
+### 创建参与者监督
+
+现在我们有两个参与者：写入者和键值存储参与者。在本节中，我们将构建一个监督者参与者，跟踪系统中的每个参与者。我们将庆幸我们实现了路由器模式。创建一个监督者参与者，然后将监督者参与者通道的发送者传递给每个参与者将是一件令人头疼的事。相反，我们可以通过路由器向监督者参与者发送更新消息，因为每个参与者都可以直接访问 `ROUTER_SENDER`。监督者也可以通过路由器向正确的参与者发送重置请求，如图 8-3 所示。
+
+你可以看到在图 8-3 中，如果我们没有从键值参与者或写入者参与者收到更新，我们可以重置键值参与者。因为当键值参与者创建写入者参与者时，我们可以让键值参与者持有写入者参与者的句柄，所以如果键值参与者死亡，写入者参与者也会死亡。当键值参与者重新创建时，写入者参与者也将被创建。
+
+为了实现这个心跳监督者机制，我们必须稍微重构一下我们的参与者，但这将说明一点复杂性的权衡如何使我们能够跟踪和管理长时间运行的参与者。然而，在我们编写任何代码之前，我们需要以下导入来处理参与者的时间检查：
+
+```rust
+use tokio::time::{self, Duration, Instant};
+```
+
+我们还需要支持参与者的重置和心跳注册。因此，我们必须扩展我们的 `RoutingMessage`：
+
+```rust
+enum RoutingMessage {
+    KeyValue(KeyValueMessage),
+    Heartbeat(ActorType),
+    Reset(ActorType),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+enum ActorType {
+    KeyValue,
+    Writer
+}
+```
+
+在这里，我们可以请求重置或注册任何我们想在 `ActorType` 枚举中声明的参与者的心跳。
+
+我们的第一次重构可以是键值参与者。首先，我们为写入者参与者定义一个句柄：
+
+```rust
+let (writer_key_value_sender, writer_key_value_receiver) = channel(32);
+let _writer_handle = tokio::spawn(
+    writer_actor(writer_key_value_receiver)
+);
+```
+
+我们仍然向写入者参与者发送一个 `Get` 消息来填充映射，但随后我们将消息处理代码提升到一个无限循环中，以便实现超时：
+
+```rust
+let timeout_duration = Duration::from_millis(200);
+let router_sender = ROUTER_SENDER.get().unwrap().clone();
+
+loop {
+    match time::timeout(timeout_duration, receiver.recv()).await {
+        Ok(Some(message)) => {
+            if let Some(
+                write_message
+            ) = WriterLogMessage::from_key_value_message(&message) {
+                let _ = writer_key_value_sender.send(
+                    write_message
+                ).await;
+            }
+            match message {
+                // ...
+            }
+        },
+        Ok(None) => break,
+        Err(_) => {
+            router_sender.send(
+                RoutingMessage::Heartbeat(ActorType::KeyValue)
+            ).await.unwrap();
+        }
+    };
+}
+```
+
+在循环结束时，我们向路由器发送一个心跳消息，表示我们的键值存储仍然存活。我们还有一个超时，所以如果 200 毫秒过去了，我们仍然运行一个循环，因为我们不希望缺乏传入消息成为监督者认为我们的参与者死亡或卡住的原因。
+
+我们的写入者参与者也需要类似的方法。我们鼓励你尝试自己编写这段代码。希望你的尝试与以下代码类似：
+
+```rust
+let timeout_duration = Duration::from_millis(200);
+let router_sender = ROUTER_SENDER.get().unwrap().clone();
+
+loop {
+    match time::timeout(timeout_duration, receiver.recv()).await {
+        Ok(Some(message)) => {
+            match message {
+                // ...
+            }
+            let contents = serde_json::to_string(&map).unwrap();
+            file.set_len(0).await;
+            file.seek(std::io::SeekFrom::Start(0)).await;
+            file.write_all(contents.as_bytes()).await;
+            file.flush().await;
+        },
+        Ok(None) => break,
+        Err(_) => {
+            router_sender.send(
+                RoutingMessage::Heartbeat(ActorType::Writer)
+            ).await.unwrap();
+        }
+    };
+}
+```
+
+我们的参与者现在支持向路由器发送心跳，供监督者跟踪。接下来我们需要构建我们的监督者参与者。我们的监督者参与者的方法与其余参与者类似。它有一个包含超时的无限循环，因为缺乏心跳消息不应该阻止监督者参与者检查它跟踪的参与者的状态。事实上，缺乏心跳消息可能表明系统需要检查。然而，在无限循环周期结束时，监督者参与者不是发送消息，而是遍历自己的状态以检查是否有任何参与者尚未签到。如果参与者已过时，监督者参与者会向路由器发送重置请求。这个过程的大纲在以下代码中给出：
+
+```rust
+async fn heartbeat_actor(mut receiver: Receiver<ActorType>) {
+    let mut map = HashMap::new();
+    let timeout_duration = Duration::from_millis(200);
+    loop {
+        match time::timeout(timeout_duration, receiver.recv()).await {
+            Ok(Some(actor_name)) => map.insert(
+                actor_name, Instant::now()
+            ),
+            Ok(None) => break,
+            Err(_) => {
+                continue;
+            }
+        };
+        let half_second_ago = Instant::now() - Duration::from_millis(500);
+        for (key, &value) in map.iter() {
+            // ...
+        }
+    }
+}
+```
+
+我们决定将截止时间设置为半秒。截止时间越小，参与者失败后重启的速度就越快。然而，这增加了工作量，因为参与者等待消息的超时时间也必须更小，以满足监督者的要求。
+
+当我们遍历状态键以检查参与者时，如果超过截止时间，我们会发送重置请求：
+
+```rust
+if value < half_second_ago {
+    match key {
+        ActorType::KeyValue | ActorType::Writer =>
+        {
+            ROUTER_SENDER.get().unwrap().send(
+                RoutingMessage::Reset(ActorType::KeyValue)
+            ).await.unwrap();
+            map.remove(&ActorType::KeyValue);
+            map.remove(&ActorType::Writer);
+            break;
+        }
+    }
+}
+```
+
+你可能注意到，即使写入者参与者失败，我们也会重置键值参与者。这是因为键值参与者将重新启动写入者参与者。我们还从映射中移除键，因为当键值参与者再次启动时，它会发送心跳消息，导致这些键再次被检查。然而，写入者键可能仍然过时，导致第二次不必要的触发。我们可以在它们再次注册后开始检查那些参与者。
+
+我们的路由器参与者现在必须支持我们所有的更改。首先，我们需要将键值通道和句柄设置为可变：
+
+```rust
+let (mut key_value_sender, mut key_value_receiver) = channel(32);
+let mut key_value_handle = tokio::spawn(
+    key_value_actor(key_value_receiver)
+);
+```
+
+这是因为如果键值参与者被重置，我们需要重新分配新的句柄和通道。然后我们生成心跳参与者来监督我们的其他参与者：
+
+```rust
+let (heartbeat_sender, heartbeat_receiver) = channel(32);
+tokio::spawn(heartbeat_actor(heartbeat_receiver));
+```
+
+现在我们的参与者系统正在运行，我们的路由器参与者可以处理传入的消息：
+
+```rust
+while let Some(message) = receiver.recv().await {
+    match message {
+        RoutingMessage::KeyValue(message) => {
+            let _ = key_value_sender.send(message).await;
+        },
+        RoutingMessage::Heartbeat(message) => {
+            let _ = heartbeat_sender.send(message).await;
+        },
+        RoutingMessage::Reset(message) => {
+            // ...
+        }
+    }
+}
+```
+
+对于我们的重置，我们必须执行几个步骤。首先，我们创建一个新通道。我们中止键值参与者，将发送者和接收者重新分配到新通道，然后生成一个新的键值参与者：
+
+```rust
+match message {
+    ActorType::KeyValue | ActorType::Writer => {
+        let (new_key_value_sender, new_key_value_receiver) = channel(
+            32
+        );
+        key_value_handle.abort();
+        key_value_sender = new_key_value_sender;
+        key_value_receiver = new_key_value_receiver;
+        key_value_handle = tokio::spawn(
+            key_value_actor(key_value_receiver)
+        );
+        time::sleep(Duration::from_millis(100)).await;
+    },
+}
+```
+
+你可以看到我们有一个短暂的睡眠，以确保任务已经生成并在异步运行时上运行。你可能担心在此转换期间可能会向键值参与者发送更多请求，这可能会出错。然而，所有请求都通过路由器参与者。如果这些消息被发送到路由器用于键值参与者，它们只会排队在路由器的通道中。由此可见，参与者系统是非常容错的。
+
+由于这段代码有很多活动部分，让我们用主函数一起运行所有代码：
+
+```rust
+// 在运行以下代码之前，请确保你的 data.json 文件有一组空的大括号，如下所示：
+// {}
+
+#[tokio::main]
+async fn main() -> Result<(), std::io::Error> {
+    let (sender, receiver) = channel(32);
+    ROUTER_SENDER.set(sender).unwrap();
+    tokio::spawn(router(receiver));
+
+    let _ = set("hello".to_string(), b"world".to_vec()).await;
+    let value = get("hello".to_string()).await;
+    println!("value: {:?}", value);
+    let value = get("hello".to_string()).await;
+    println!("value: {:?}", value);
+
+    ROUTER_SENDER.get().unwrap().send(
+        RoutingMessage::Reset(ActorType::KeyValue)
+    ).await.unwrap();
+
+    let value = get("hello".to_string()).await;
+    println!("value: {:?}", value);
+    let _ = set("test".to_string(), b"world".to_vec()).await;
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    Ok(())
+}
+```
+
+运行我们的主函数会得到以下打印输出：
+
+```
+Data loaded from file: []
+value: Some([119, 111, 114, 108, 100])
+value: Some([119, 111, 114, 108, 100])
+Data loaded from file: {"hello": [119, 111, 114, 108, 100]}
+value: Some([119, 111, 114, 108, 100])
+```
+
+我们可以看到，在设置系统时，写入者参与者最初加载了数据。在设置了 `hello` 值之后，我们的 `get` 函数正常工作。然后我们手动强制重置。在这里，我们可以看到数据再次被加载，这意味着写入者参与者正在重新启动。我们知道之前的写入者参与者已经死亡，因为写入者参与者获取文件句柄并一直持有它。我们会得到一个错误，因为文件描述符已经被持有。
+
+如果你晚上想睡个好觉，可以在写入者参与者循环前添加一个时间戳，并在每次循环迭代开始时打印出时间戳，这样时间戳的打印就不依赖于任何传入的消息。这将给出如下打印输出：
+
+```
+Data loaded from file: []
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 669830291 }
+value: Some([119, 111, 114, 108, 100])
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 669830291 }
+value: Some([119, 111, 114, 108, 100])
+Starting key_value_actor
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 669830291 }
+Data loaded from file: {"hello": [119, 111, 114, 108, 100]}
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+value: Some([119, 111, 114, 108, 100])
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+writer instance: Instant { tv_sec: 1627237, tv_nsec: 773026500 }
+```
+
+我们可以看到重置前后的实例是不同的，并且重置后现有写入者实例的踪迹消失了。我们可以安心睡觉，知道我们的重置工作正常，并且没有孤独的参与者在我们的系统中漫无目的（我们指的是我们的系统——我们无法保证好莱坞的情况）。
+
+### 总结
+
+在本章中，我们构建了一个系统，它接受键值事务，通过写入者参与者备份它们，并通过心跳机制进行监控。即使这个系统有很多活动部分，但通过路由器模式简化了实现。路由器模式不如直接调用参与者高效，因为消息在到达目的地之前必须经过一个参与者。然而，路由器模式是一个极好的起点。当找出解决问题所需的参与者时，你可以依赖路由器模式。一旦解决方案形成，你可以转向参与者直接互相调用，而不是通过路由器参与者。
+
+虽然我们专注于使用参与者构建整个系统，但我们必须记住，它们运行在异步运行时上。因为参与者是隔离的，并且由于它们仅通过消息通信而易于测试，我们可以采用与参与者混合的方法。这意味着我们可以使用参与者向正常的异步系统添加额外的功能。参与者通道可以在任何地方被访问。就像从路由器参与者迁移到参与者直接互相调用一样，当新的异步功能整体形式形成时，你可以慢慢地将新的异步代码从参与者迁移到标准的异步代码。你还可以使用参与者在遗留代码中分离功能，以隔离依赖关系，从而将遗留代码放入测试框架中。
+
+总的来说，由于其隔离性，参与者是一个可以在各种环境中实现的有用工具。当你在发现阶段时，参与者也可以充当代码的“过渡区”。我们俩都在紧迫的期限内需要提出解决方案时求助于参与者，例如在微服务集群中缓存和缓冲聊天机器人消息。
+
+在第 9 章中，我们将继续探索如何通过介绍设计模式来接近和构建解决方案。
+
+## 第九章 设计模式  
+
+在本书中，我们已经涵盖了各种异步概念以及如何以多种方式实现异步代码来解决问题。然而，我们知道软件工程并非存在于真空中。当你在实际环境中应用你新获得的异步编程知识时，你将无法在完美的环境中应用孤立的异步代码。你可能需要将异步代码应用到一个原本不是异步的现有代码库中。你可能需要与像服务器这样的第三方服务交互，这时你需要处理服务器响应的变化。在本章中，我们将介绍在解决各种问题时帮助你实现异步代码的设计模式。
+
+通过本章的学习，你将能够在以前不支持异步编程的现有代码库中实现异步代码。你还将能够实现瀑布设计模式，以构建具有可重用异步组件的路径。你将能够在不修改异步任务代码的情况下，通过实现装饰器模式来轻松添加额外功能（如日志记录），只需在运行或构建程序时添加编译标志即可。最后，你还将能够让整个异步系统通过实现重试和电路熔断器模式来适应错误。
+
+首先，在实现设计模式之前，我们需要能够在系统中实现异步代码。因此，我们应该从构建一个隔离的模块开始。
+
+### 构建隔离的模块
+
+让我们假设我们有一个没有任何异步代码的 Rust 代码库，并且我们希望将一些异步 Rust 集成到这个现有的代码库中。与其重写整个代码库来融入异步 Rust，我们建议保持交互的影响范围尽量小。大规模的重写很少能按时完成，并且随着重写的延迟，更多功能被添加到现有代码库中，这会威胁到重写的完成。因此，我们可以从小处着手，将我们的异步代码写在它自己的模块中，然后提供同步的入口点。这些同步入口点使我们的异步模块能够集成到现有代码库的任何地方。同步入口点还使其他开发人员能够使用我们的异步模块，而无需学习异步编程。这简化了集成过程，其他开发人员可以按照自己的节奏逐步理解异步编程。
+
+但是，我们如何通过同步入口点提供异步编程的好处呢？图9-1描述了为非异步代码库提供异步好处的高层流程。
+
+**图9-1. 我们隔离异步模块的概述**
+
+如图9-1所示，我们发送一个异步任务到运行时，将该任务的句柄放入一个映射表中，并返回一个与该映射表中句柄对应的键。使用该模块的开发人员调用一个普通的阻塞函数，并收到一个唯一的 ID。该任务在异步运行时中执行，开发人员可以继续编写一些同步代码。当开发人员需要结果时，他们通过 `get_add` 函数传入唯一的 ID，该函数将阻塞同步代码，直到产生结果。开发人员将唯一 ID 视为一个异步句柄，但不必直接与任何异步代码交互。在我们实现这种方法之前，我们需要以下依赖项：
+
+```toml
+tokio = { version = "1.33.0", features = ["full"] }
+uuid = { version = "1.5.0", features = ["v4"] }
+```
+
+有了这些依赖项，我们可以在 `main.rs` 旁边创建我们的 `async_mod.rs` 文件。我们的 `async_mod.rs` 文件将包含我们的异步模块代码。在这个文件中，我们需要这些导入：
+
+```rust
+use std::sync::LazyLock;
+use tokio::runtime::{Runtime, Builder};
+use tokio::task::JoinHandle;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+pub type AddFutMap = LazyLock<Arc<Mutex<HashMap<String, JoinHandle<i32>>>>>;
+```
+
+对于我们的运行时，我们将使用以下内容：
+
+```rust
+static TOKIO_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
+    Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("Failed to create Tokio runtime")
+});
+```
+
+我们定义了一个包含睡眠操作（代表异步任务）的简单 `async_add` 函数：
+
+```rust
+async fn async_add(a: i32, b: i32) -> i32 {
+    println!("starting async_add");
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    println!("finished async_add");
+    a + b
+}
+```
+
+这是我们将暴露给异步运行时但不暴露给模块外部的核心异步任务，这就是为什么运行时和 `async_add` 函数不是公开的。
+
+现在我们已经定义了异步运行时和 `async_add` 任务，我们可以构建我们的处理程序。如图9-2所示，我们的处理程序本质上是入口点与运行时和映射表交互的路由器。
+
+**图9-2. 与我们的异步句柄映射表的链接**
+
+我们的处理程序需要是一个函数，它接收要相加的数字或用于获取结果的唯一 ID：
+
+```rust
+fn add_handler(a: Option<i32>, b: Option<i32>, id: Option<String>)
+    -> Result<(Option<i32>, Option<String>), String> {
+    static MAP: AddFutMap = LazyLock::new(|| Arc::new(
+        Mutex::new(HashMap::new())
+    ));
+    match (a, b, id) {
+        (Some(a), Some(b), None) => {
+            // ...
+        },
+        (None, None, Some(id)) => {
+            // ...
+        },
+        _ => Err(
+            "either a or b need to be provided or a handle_id".to_string()
+        )
+    }
+}
+```
+
+对于我们的示例，`add_handler` 函数的 `Option<i32>` 输入是可行的，因为用户不会直接与之交互。然而，如果你计划让 `add_handler` 支持更多操作，如减法或乘法，最好向 `add_handler` 函数传入一个枚举：
+
+```rust
+enum Operation {
+    Add { a: i32, b: i32 },
+    Multiply { a: i32, b: i32 },
+    Subtract { a: i32, b: i32 },
+}
+
+fn perform_operation(op: Operation) -> i32 {
+    match op {
+        Operation::Add { a, b } => a + b,
+        Operation::Multiply { a, b } => a * b,
+        Operation::Subtract { a, b } => a - b,
+    }
+}
+```
+
+我们的期物映射表是惰性求值的，就像在第 3 章中我们在 `spawn_task` 函数中将队列定义为惰性求值一样。如果我们调用处理程序函数并更新了 `MAP`，下次我们调用处理程序时，处理程序函数内部将拥有更新后的 `MAP`。尽管我们只打算在主线程的同步代码中调用处理程序函数，但我们不能保证其他开发人员不会创建一个线程并调用此函数。
+
+如果你 100% 确定处理程序只在主线程中被调用，你可以去掉 `Arc` 和 `Mutex`，使 `MAP` 可变，并使用不安全代码在函数的其余部分访问 `MAP`。然而，正如你可能猜到的，这是不安全的。你也可以使用 `thread_local` 来去掉 `Arc` 和 `Mutex`。只要开发人员在启动任务的同一线程中获取结果，这可以是安全的。开发人员不需要访问程序的整个映射表。开发人员只需要访问保存其任务异步句柄的映射表。
+
+在我们处理程序函数的第一个匹配分支中，我们提供了要相加的数字，因此我们生成一个任务，将其与 `MAP` 中的唯一 ID 绑定，并返回该唯一 ID：
+
+```rust
+let handle = TOKIO_RUNTIME.spawn(async_add(a, b));
+let id = uuid::Uuid::new_v4().to_string();
+MAP.lock().unwrap().insert(id.clone(), handle);
+Ok((None, Some(id)))
+```
+
+现在我们可以定义处理用于获取任务结果的唯一 ID 的分支。在这里，我们从 `MAP` 中获取任务句柄，将句柄传入异步运行时以阻塞当前线程直到产生结果，然后返回结果：
+
+```rust
+let handle = match MAP.lock().unwrap().remove(&id) {
+    Some(handle) => handle,
+    None => return Err("No handle found".to_string())
+};
+let result: i32 = match TOKIO_RUNTIME.block_on(async {
+    handle.await
+}) {
+    Ok(result) => result,
+    Err(e) => return Err(e.to_string())
+};
+Ok((Some(result), None))
+```
+
+我们的处理程序现在可以工作了。但是，请注意我们的处理程序不是公开的。这是因为接口不够方便。使用我们模块的开发人员可能会传入错误的输入组合。我们可以从第一个公共接口开始：
+
+```rust
+pub fn send_add(a: i32, b: i32) -> Result<String, String> {
+    match add_handler(Some(a), Some(b), None) {
+        Ok((None, Some(id))) => Ok(id),
+        Ok(_) => Err(
+            "Something went wrong, please contact author".to_string()
+        ),
+        Err(e) => Err(e)
+    }
+}
+```
+
+我们要求开发人员必须提供两个整数，这两个整数会传递给我们的处理程序。然后我们返回 ID。但是，如果我们返回任何不是错误的变体，那么我们的实现就出了严重问题。为了帮助使用我们模块的开发人员节省调试时间，我们告诉他们联系我们，因为这是我们自己的问题。
+
+获取结果的接口与我们的发送接口类似，只是方向相反，采用以下形式：
+
+```rust
+pub fn get_add(id: String) -> Result<i32, String> {
+    match add_handler(None, None, Some(id)) {
+        Ok((Some(result), None)) => Ok(result),
+        Ok(_) => Err(
+            "Something went wrong, please contact author".to_string()
+        ),
+        Err(e) => Err(e)
+    }
+}
+```
+
+现在我们的异步模块已经完成，我们可以在 `main.rs` 中使用它：
+
+```rust
+mod async_mod;
+
+fn main() {
+    println!("Hello, world!");
+    let id = async_mod::send_add(1, 2).unwrap();
+    println!("id: {}", id);
+    std::thread::sleep(std::time::Duration::from_secs(4));
+    println!("main sleep done");
+    let result = async_mod::get_add(id).unwrap();
+    println!("result: {}", result);
+}
+```
+
+运行代码会得到类似以下的输出：
+
+```
+Hello, world!
+starting async_add
+id: e2a2f3e1-2a77-432c-b0b8-923483ae637f
+finished async_add
+main sleep done
+result: 3
+```
+
+你的 ID 会不同，但顺序应该相同。在这里，我们可以看到异步任务在我们的主线程继续执行时正在被处理，并且我们可以获取结果。我们可以看到我们的异步代码是多么隔离。我们现在可以自由地进行实验。例如，你将能够尝试不同的运行时和运行时配置。回想一下第 7 章，如果我们的计算需求增加，我们可以切换到本地集合并开始使用本地线程状态来缓存最近计算的值。然而，我们的接口与异步原语完全解耦，因此使用我们模块的其他开发人员不会注意到差异，因此他们对接口的实现也不会被破坏。
+
+现在我们已经介绍了如何以对代码库其余部分影响最小的方式实现异步模块，我们可以在我们的代码库中实现其他设计模式。我们可以从瀑布设计模式开始。
+
+### 瀑布设计模式
+
+瀑布设计模式（也称为责任链模式）是一系列直接将值传递给彼此的异步任务的链，如图9-3所示。
+
+**图9-3. 瀑布异步设计模式**
+
+实现一个基本的瀑布设计模式很简单。使用 Rust，我们可以利用错误处理系统来编写安全且简洁的代码。我们可以用以下三个异步任务来演示：
+
+```rust
+type WaterFallResult = Result<String, Box<dyn std::error::Error>>;
+
+async fn task1() -> WaterFallResult {
+    Ok("Task 1 completed".to_string())
+}
+async fn task2(input: String) -> WaterFallResult {
+    Ok(format!("{} then Task 2 completed", input))
+}
+async fn task3(input: String) -> WaterFallResult {
+    Ok(format!("{} and finally Task 3 completed", input))
+}
+```
+
+由于它们都返回相同的错误类型，它们都可以通过 `?` 运算符链接在一起：
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let output1 = task1().await?;
+    let output2 = task2(output1).await?;
+    let result = task3(output2).await?;
+    println!("{}", result);
+    Ok(())
+}
+```
+
+瀑布方法简单且可预测。它还使我们能够重用异步任务作为构建模块。例如，我们的三个异步任务可以接受 `i32` 数据类型。我们可以在这些异步任务周围添加逻辑，如下所示：
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let output1 = task1().await?;
+    let output2: i32;
+    if output1 > 10 {
+        output2 = task2(output1).await?;
+    } else {
+        output2 = task3(output1).await?;
+    }
+    println!("{}", output2);
+    Ok(())
+}
+```
+
+考虑到我们可以使用逻辑来引导瀑布的流向，我们可以看到瀑布实现可能对构建略有不同但使用相同核心组件的路径很有用。我们还可以根据需要轻松地在这些工作流的组件之间插入指标/日志记录。虽然在这些组件之间插入指标/日志记录很有用，但我们也可以使用装饰器模式为任务添加功能。
+
+### 装饰器模式
+
+**装饰器模式**是围绕功能的包装器，它要么增加该功能，要么在主执行之前或之后执行逻辑。装饰器的经典例子是夹具：单元测试在测试前设置某些数据存储的状态，然后在测试后销毁该状态。测试之间的状态设置和销毁确保测试是原子的，并且失败的测试不会改变其他测试的结果。这种状态管理可以包装在我们正在测试的代码周围。日志记录也是一个经典用途，因为我们可以轻松地关闭日志记录，而无需更改核心逻辑。装饰器也用于会话管理。
+
+在我们看在异步上下文中实现装饰器模式之前，让我们看看如何为结构体实现一个基本的装饰器。我们的装饰器将向一个字符串添加内容。我们将要装饰的功能将产生一个字符串，代码如下：
+
+```rust
+trait Greeting {
+    fn greet(&self) -> String;
+}
+```
+
+然后我们定义一个实现我们 trait 的结构体：
+
+```rust
+struct HelloWorld;
+impl Greeting for HelloWorld {
+    fn greet(&self) -> String {
+        "Hello, World!".to_string()
+    }
+}
+```
+
+我们可以定义一个装饰器结构体，它实现我们的 trait，并且它包含一个同样体现我们 trait 的内部组件：
+
+```rust
+struct ExcitedGreeting<T> {
+    inner: T,
+}
+
+impl<T> ExcitedGreeting<T> {
+    fn greet(&self) -> String
+    where
+        T: Greeting,
+    {
+        let mut greeting = self.inner.greet();
+        greeting.push_str(" I'm so excited to be in Rust!");
+        greeting
+    }
+}
+```
+
+在这里，我们调用内部结构体的 trait 并向字符串添加内容，返回修改后的字符串。我们可以轻松地测试装饰器模式：
+
+```rust
+fn main() {
+    let raw_one = HelloWorld;
+    let raw_two = HelloWorld;
+    let decorated = ExcitedGreeting { inner: raw_two };
+    println!("{}", raw_one.greet());
+    println!("{}", decorated.greet());
+}
+```
+
+我们可以轻松地在结构体周围包装功能。因为我们为包装器实现了相同的 trait，所以我们也可以将包装后的结构体传递给需要实现了我们 trait 的结构体的函数。因此，如果我们期望的是 trait 而不是结构体，我们就不需要改变代码库中的任何代码。
+
+我们甚至可以使装饰器模式的实现依赖于编译特性。例如，我们可以在 `Cargo.toml` 中添加一个特性：
+
+```toml
+[features]
+logging_decorator = []
+```
+
+然后，我们可以根据特性标志重写 `main` 函数，以编译带装饰逻辑（或不带）的代码：
+
+```rust
+fn main() {
+    #[cfg(feature = "logging_decorator")]
+    let hello = ExcitedGreeting { inner: HelloWorld };
+
+    #[cfg(not(feature = "logging_decorator"))]
+    let hello = HelloWorld;
+
+    println!("{}", hello.greet());
+}
+```
+
+要运行我们的装饰器，我们需要在终端调用以下命令：
+
+```bash
+cargo run --features "logging_decorator"
+```
+
+如果需要，我们可以将此特性设置为默认值，如果它依赖任何依赖项，也可以向该特性添加额外的依赖项。
+
+现在你理解了装饰器的基本原理，我们可以在一个期物中实现相同的功能。不再是结构体，我们有一个内部期物。在构建期物之前，我们需要这些导入：
+
+```rust
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+```
+
+对于这个装饰器，我们将实现一个日志记录 trait，我们的示例将在轮询内部期物之前调用日志函数。我们的日志记录 trait 采用以下形式：
+
+```rust
+trait Logging {
+    fn log(&self);
+}
+```
+
+然后我们定义包含内部期物的日志记录结构体：
+
+```rust
+struct LoggingFuture<F: Future + Logging> {
+    inner: F,
+}
+
+impl<F: Future + Logging> Future for LoggingFuture<F> {
+    type Output = F::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output>
+    {
+        let inner = unsafe { self.map_unchecked_mut(|s| &mut s.inner) };
+        inner.log();
+        inner.poll(cx)
+    }
+}
+```
+
+虽然我们在 `poll` 中使用了不安全代码，但我们的代码是安全的。我们必须使用不安全块，因为 Rust 编译器无法检查 pin 的投影。我们并没有将值移出 pin。
+
+虽然不安全块是安全的，但我们可以通过以下代码固定我们的内部期物来避免不安全标记：
+
+```rust
+struct LoggingFuture<F: Future + Logging> {
+    inner: Pin<Box<F>>,
+}
+
+impl<F: Future + Logging> Future for LoggingFuture<F> {
+    type Output = F::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output>
+    {
+        let this = self.get_mut();
+        let inner = this.inner.as_mut();
+        inner.log();
+        inner.poll(cx)
+    }
+}
+```
+
+现在我们需要为任何也实现期物的类型实现 `Logging` trait：
+
+```rust
+impl<F: Future> Logging for F {
+    fn log(&self) {
+        println!("Polling the future!");
+    }
+}
+```
+
+这意味着无论装饰器持有哪个期物，我们都可以调用 `log` 函数。我们可以创造性地组合其他 trait，以便传入装饰器的期物可以产生关于期物的特定值，但对于这个示例，我们仅仅演示如何实现异步装饰器。现在我们可以定义一个简单的期物，包装它，并调用它：
+
+```rust
+async fn my_async_function() -> String {
+    "Result of async computation".to_string()
+}
+
+#[tokio::main]
+async fn main() {
+    let logged_future = LoggingFuture { inner: my_async_function() };
+    let result = logged_future.await;
+    println!("{}", result);
+}
+```
+
+运行我们的代码会产生以下输出：
+
+```
+Polling the future!
+Result of async computation
+```
+
+在这里，我们可以看到日志装饰器起作用了。我们可以对装饰器使用相同的编译特性方法。
+
+因为装饰器被设计为以最小的摩擦插入并具有相同的类型签名，它们不应该对程序的逻辑产生太大影响。如果我们想基于某些条件改变程序的流程，我们可以考虑使用状态机模式。
+
+### 状态机模式
+
+状态机持有特定的状态以及关于如何改变该状态的逻辑。其他进程可以引用该状态来指导它们的行动方式；这就是状态机模式。状态机的一个简单的现实例子是一组交通信号灯。根据国家的不同，交通信号灯可能会有所不同，但它们都至少有两种状态：红色和绿色。根据系统的不同，一系列输入和硬编码的逻辑可以随时间改变每个交通信号灯的状态。需要注意的是，司机直接观察交通信号灯的状态并据此采取行动。我们可以有任意多或任意少的司机，但契约保持不变。信号灯专注于维护状态并根据输入改变状态，而司机仅仅观察并对该状态做出反应。
+
+有了这个类比，状态机可用于调度任务和管理作业队列、网络、创建工作流和管道，以及控制具有不同状态并响应异步输入和定时事件组合的机器/系统也就不足为奇了。
+
+实际上，为了进一步说明，状态机的概念不仅限于像交通信号灯这样的具体示例。Rust 的 async/await 模型也依赖于期物是状态机的理念。一个期物表示一个可能尚不可用的值，随着其进展，它经历不同的状态（例如，`Pending`、`Ready`），直到产生结果或错误。
+
+对于我们的示例，我们可以构建一个基本的开关状态，它要么开要么关。枚举非常适合管理状态，因为我们有匹配模式，并且枚举变体也可以容纳数据。我们简单的状态采用以下形式：
+
+```rust
+enum State {
+    On,
+    Off,
+}
+```
+
+我们定义状态机消费以改变状态的事件状态：
+
+```rust
+enum Event {
+    SwitchOn,
+    SwitchOff,
+}
+```
+
+现在我们有了事件和状态。事件和状态之间的接口可以用以下代码定义：
+
+```rust
+impl State {
+    async fn transition(self, event: Event) -> Self {
+        match (&self, event) {
+            (State::On, Event::SwitchOff) => {
+                println!("Transitioning to the Off state");
+                State::Off
+            },
+            (State::Off, Event::SwitchOn) => {
+                println!("Transitioning to the On state");
+                State::On
+            },
+            _ => {
+                println!(
+                    "No transition possible, staying in the current state"
+                );
+                self
+            },
+        }
+    }
+}
+```
+
+在这里，我们可以看到，如果开关状态是开，那么关闭开关的事件将把状态转为关，反之亦然。我们可以测试我们的状态机：
+
+```rust
+#[tokio::main]
+async fn main() {
+    let mut state = State::On;
+
+    state = state.transition(Event::SwitchOff).await;
+    state = state.transition(Event::SwitchOn).await;
+    state = state.transition(Event::SwitchOn).await;
+
+    match state {
+        State::On => println!("State machine is in the On state"),
+        _ => println!("State machine is not in the expected state"),
+    }
+}
+```
+
+运行此代码会得到以下输出：
+
+```
+Transitioning to the Off state
+Transitioning to the On state
+No transition possible, staying in the current state
+State machine is in the On state
+```
+
+在我们的示例中，异步代码不是必需的，但这是因为我们的示例很简单。例如，我们可以使用异步代码通过互斥锁访问状态，或通过异步通道监听事件。就像交通信号灯示例一样，我们的状态机将与在运行时中处理的异步任务解耦。例如，我们的状态机可以是一个包含计数和开或关枚举的结构体。其他任务在启动时可以通过通道向我们的状态机发送事件以增加计数。当计数超过某个阈值时，状态机可以将状态切换为关。如果新任务在启动前需要检查状态机是否为开状态，我们就实现了一个简单的信号系统，如果任务计数过高，它会限制新异步任务的进展。但是，如果我们愿意，我们可以用 `AtomicUsize` 替换这个开关，而不是 `AtomicBool`。但是，我们的状态机示例为我们根据需要实现更复杂的逻辑做好了准备。
+
+我们的状态机也可以根据其状态轮询不同的期物。以下代码示例展示了如何根据开关状态轮询不同的期物：
+
+```rust
+struct StateFuture<F: Future, X: Future> {
+    pub state: State,
+    pub on_future: F,
+    pub off_future: X,
+}
+```
+
+现在状态机有了状态和两个要轮询的期物，我们可以实现轮询逻辑：
+
+```rust
+impl<F: Future, X: Future> Future for StateFuture<F, X> {
+    type Output = State;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output> {
+        match self.state {
+            State::On => {
+                let inner = unsafe {
+                    self.map_unchecked_mut(|s| &mut s.on_future)
+                };
+                let _ = inner.poll(cx);
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            },
+            State::Off => {
+                let inner = unsafe {
+                    self.map_unchecked_mut(|s| &mut s.off_future)
+                };
+                let _ = inner.poll(cx);
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            },
+        }
+    }
+}
+```
+
+在这个示例中，期物将在后台持续轮询。这使得我们的状态机能够根据状态切换其连续操作。在轮询期物之前添加额外功能，例如通过通道监听事件以潜在地改变状态，可以轻松完成。
+
+回到我们的状态机限制新任务进展的示例，检查状态机的异步任务应该如何处理关状态？这就是重试模式的用武之地。
+
+### 重试模式
+
+我们可能处于这样一种情况：我们的异步任务在尝试访问某些东西时被阻塞。这可能是我们的状态机说任务太多，或者服务器可能过载。我们不希望异步任务放弃，因此重试可能会得到我们想要的结果。但是，我们也不想无休止地冲击目标。如果服务器、互斥锁或数据库过载，我们最不应该做的就是向过载的目标发送背靠背的请求。
+
+重试模式允许异步任务重试请求。然而，在每次重试中，有一个延迟，并且每次尝试的延迟都会加倍。这种退避将使我们的目标减少请求频率，以赶上目标正在处理的任务。
+
+为了探索重试模式，我们最初定义一个总是返回错误的 `get_data` 函数：
+
+```rust
+async fn get_data() -> Result<String, Box<dyn std::error::Error>> {
+    Err("Error".into())
+}
+```
+
+然后我们定义一个实现重试函数的异步任务：
+
+```rust
+async fn do_something() -> Result<(), Box<dyn std::error::Error>> {
+    let mut milliseconds = 1000;
+    let total_count = 5;
+    let mut count = 0;
+    let result: String;
+    loop {
+        match get_data().await {
+            Ok(data) => {
+                result = data;
+                break;
+            },
+            Err(err) => {
+                println!("Error: {}", err);
+                count += 1;
+                if count == total_count {
+                    return Err(err);
+                }
+            }
+        }
+        tokio::time::sleep(
+            tokio::time::Duration::from_millis(milliseconds)
+        ).await;
+        milliseconds *= 2;
+    }
+    Ok(())
+}
+```
+
+我们运行重试模式：
+
+```rust
+#[tokio::main]
+async fn main() {
+    let outcome = do_something().await;
+    println!("Outcome: {:?}", outcome);
+}
+```
+
+我们得到以下输出：
+
+```
+Error: Error
+Error: Error
+Error: Error
+Error: Error
+Error: Error
+Outcome: Err("Error")
+```
+
+我们的重试起作用了。重试模式更像是一种实用工具，而不是整个应用程序的设计选择。当异步任务需要访问目标时，在整个应用程序中撒上重试模式，如果系统处理流量峰值，通过减少对目标的压力，将给你的系统带来更多的灵活性。
+
+但是，如果我们持续收到错误怎么办？当然，如果超过某个阈值，继续生成任务就没有意义了。例如，如果服务器完全崩溃，必须有一个状态，我们不再通过发送更多请求来浪费 CPU 资源。这就是电路熔断器模式帮助我们的时候。
+
+### 电路熔断器模式
+
+电路熔断器模式在错误数量超过阈值时阻止任务被生成。与其定义我们自己的状态机（开或关），我们可以用两个简单的原子值来复制相同的效果，定义如下：
+
+```rust
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::future::Future;
+use tokio::task::JoinHandle;
+
+static OPEN: AtomicBool = AtomicBool::new(false);
+static COUNT: AtomicUsize = AtomicUsize::new(0);
+```
+
+前提相当简单。如果 `OPEN` 为 `true`，我们说明电路已打开，不能再生成新任务。如果发生错误，我们将 `COUNT` 加一，如果 `COUNT` 超过阈值，则将 `OPEN` 设置为 `true`。我们还需要编写我们自己的 `spawn_task` 函数，在生成任务之前检查 `OPEN`。我们的 `spawn_task` 函数采用以下形式：
+
+```rust
+fn spawn_task<F, T>(future: F) -> Result<JoinHandle<T>, String>
+where
+    F: Future<Output = T> + Send + 'static,
+    T: Send + 'static,
+{
+    let open = OPEN.load(Ordering::SeqCst);
+    if open == false {
+        return Ok(tokio::task::spawn(future))
+    }
+    Err("Circuit Open".to_string())
+}
+```
+
+现在我们可以定义两个简单的异步任务——一个抛出错误，另一个只是通过：
+
+```rust
+async fn error_task() {
+    println!("error task running");
+    let count = COUNT.fetch_add(1, Ordering::SeqCst);
+    if count == 2 {
+        println!("opening circuit");
+        OPEN.store(true, Ordering::SeqCst);
+    }
+}
+async fn passing_task() {
+    println!("passing task running");
+}
+```
+
+有了这些任务，我们可以确定系统何时会熔断。我们可以测试系统在达到三次错误时熔断：
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), String> {
+    let _ = spawn_task(passing_task())?.await;
+    let _ = spawn_task(error_task())?.await;
+    let _ = spawn_task(error_task())?.await;
+    let _ = spawn_task(error_task())?.await;
+    let _ = spawn_task(passing_task())?.await;
+    Ok(())
+}
+```
+
+这给我们以下输出：
+
+```
+passing task running
+error task running
+error task running
+error task running
+opening circuit
+Error: "Circuit Open"
+```
+
+达到阈值后，我们无法再生成任务。我们可以对达到阈值时做什么发挥创意。也许我们跟踪所有任务，如果它们各自的阈值被打破，只阻止特定类型的任务。我们可以通过优雅的关闭来完全停止程序，并触发警报系统，以便开发人员和 IT 人员被告知关闭情况。我们也可以记录时间快照，并在一定时间后关闭电路。这些变化都取决于你要解决的问题和所需的解决方案。有了这个电路熔断器模式，我们已经介绍了足够的设计模式来帮助你在代码库中实现异步代码。
+
+### 总结
+
+在本章中，我们介绍了一系列设计模式，使你能够实现贯穿本书学习的异步代码。从整体角度思考代码库是关键。如果你正在集成到一个没有异步代码的现有代码库中，隔离模块是显而易见的第一步。本章中的所有设计模式都选择了简单的代码示例。小而简单的步骤对于实现异步代码是最好的。这种方法使测试更容易，并且如果最近的实现不再需要或破坏了代码库中的其他东西，可以让你回滚。
+
+虽然预先应用设计模式很诱人，但过度工程化似乎是设计模式普遍受到的头号批评。像平常一样编写代码，并在设计模式自然呈现时考虑实现它。强迫应用设计模式会增加导致过度工程化的风险。理解设计模式对于知道何时何地实现它们至关重要。
+
+在第10章中，我们将介绍使用标准库且没有外部依赖来构建我们自己的异步 TCP 服务器的网络异步方法。
+
+## 第十章 构建一个无依赖的异步服务器  
+
+我们现在来到了本书的倒数第二章。因此，我们需要重点关注理解异步在系统中的交互方式。为此，我们将完全使用标准库，不借助任何第三方依赖，构建一个异步服务器。这将巩固你对异步编程基本原理及其在软件系统大局中位置的理解。软件包、编程语言和 API 文档都会随时间变化。虽然理解当前的异步工具很重要，并且我们已在全书贯穿介绍了它们，但掌握异步编程的基础知识将使你能够轻松阅读未来遇到的新文档/工具/框架/语言。
+
+通过本章的学习，你将能够构建一个多线程 TCP 服务器，该服务器将接受传入的请求，并将这些请求发送给异步执行器以进行异步处理。由于我们只使用标准库，你也将能够构建自己的异步执行器，该执行器接受任务并持续轮询它们直至完成。最后，你还将能够为向服务器发送请求的客户端实现此异步功能。这将赋予你能力和信心，用最少的依赖构建基本的异步解决方案，以解决轻量级问题。那么，让我们从设置这个项目的基础开始。
+
+### 设置基础
+
+对于我们的项目，我们将使用四个工作区，它们在根目录的 `Cargo.toml` 中定义：
+
+```toml
+[workspace]
+members = [
+    "client",
+    "server",
+    "data_layer",
+    "async_runtime"
+]
+```
+
+我们使用四个工作区的原因是这些模块之间有相当多的交叉使用。客户端和服务器将是分开的，以便可以分别调用它们。服务器和客户端都将使用我们的异步运行时，因此它需要是独立的。`data_layer` 只是一个序列化和反序列化自身的消息结构体。它需要放在一个独立的工作区中，因为客户端和服务器都将引用这个数据结构体。我们可以在 `data_layer/src/data.rs` 中编写我们的样板代码，布局如下：
+
+```rust
+use std::io::{self, Cursor, Read, Write};
+
+#[derive(Debug)]
+pub struct Data {
+    pub field1: u32,
+    pub field2: u16,
+    pub field3: String,
+}
+
+impl Data {
+    pub fn serialize(&self) -> io::Result<Vec<u8>> {
+        // ...
+    }
+    pub fn deserialize(cursor: &mut Cursor<&[u8]>) -> io::Result<Data> {
+        // ...
+    }
+}
+```
+
+`serialize` 和 `deserialize` 函数使我们能够通过 TCP 连接发送 `Data` 结构体。如果我们想处理更复杂的结构体，可以使用 `serde`，但本着本章的精神，我们将编写自己的序列化逻辑，因为我们整个应用程序不会使用任何依赖。不用担心，这是我们唯一需要编写的非异步样板代码。我们的 `serialize` 函数形式如下：
+
+```rust
+let mut bytes = Vec::new();
+bytes.write(&self.field1.to_ne_bytes());
+bytes.write(&self.field2.to_ne_bytes());
+let field3_len = self.field3.len() as u32;
+bytes.write(&field3_len.to_ne_bytes());
+bytes.extend_from_slice(self.field3.as_bytes());
+Ok(bytes)
+```
+
+我们为每个数字使用 4 个字节，再用另一个 4 字节整数来指定字符串的长度，因为字符串的长度是可变的。
+
+对于我们的 `deserialize` 函数，我们向字节数组传递具有正确容量的数组和向量以进行读取，并将它们转换为正确的格式：
+
+```rust
+// 为字段初始化缓冲区，使用适当大小的数组
+let mut field1_bytes = [0u8; 4];
+let mut field2_bytes = [0u8; 2];
+
+// 从游标读取第一个字段（4字节）到缓冲区。
+// 对第二个字段执行相同操作。
+cursor.read_exact(&mut field1_bytes);
+cursor.read_exact(&mut field2_bytes);
+
+// 将字节数组转换为适当的数据类型（u32 和 u16）
+let field1 = u32::from_ne_bytes(field1_bytes);
+let field2 = u16::from_ne_bytes(field2_bytes);
+
+// 初始化一个缓冲区来读取第三个字段的长度，该长度为 4 字节
+let mut len_bytes = [0u8; 4];
+
+// 从游标读取长度到缓冲区
+cursor.read_exact(&mut len_bytes);
+
+// 将长度字节转换为 usize
+let len = u32::from_ne_bytes(len_bytes) as usize;
+
+// 初始化一个具有指定长度的缓冲区来保存第三个字段的数据
+let mut field3_bytes = vec![0u8; len];
+
+// 从游标读取第三个字段的数据到缓冲区
+cursor.read_exact(&mut field3_bytes);
+
+// 将第三个字段的字节转换为 UTF-8 字符串，如果无法转换则返回错误。
+let field3 = String::from_utf8(field3_bytes)
+    .map_err(|_| io::Error::new(
+        io::ErrorKind::InvalidData, "Invalid UTF-8"
+    ));
+// 返回结构化数据
+Ok(Data { field1, field2, field3 })
+```
+
+我们的数据层逻辑完成后，我们在 `data_layer/src/lib.rs` 文件中将 `Data` 结构体公开：
+
+```rust
+pub mod data;
+```
+
+数据层完成后，我们可以继续进行有趣的部分：仅使用标准库构建我们的异步运行时。
+
+### 构建我们的标准库异步运行时
+
+为了构建服务器的异步组件，我们需要按顺序构建以下组件：
+
+1.  **唤醒器**：唤醒期物以便恢复执行
+2.  **执行器**：处理期物直至完成
+3.  **发送器**：实现异步数据发送的期物
+4.  **接收器**：实现异步数据接收的期物
+5.  **睡眠器**：实现异步任务睡眠的期物
+
+考虑到我们需要唤醒器来帮助执行器重新激活任务以供再次轮询，我们将从构建唤醒器开始。
+
+#### 构建我们的唤醒器
+
+我们在整本书中实现 `Future` trait 时都使用了唤醒器，并且凭直觉知道需要 `wake` 或 `wake_by_ref` 函数来允许期物再次被轮询。因此，唤醒器是我们显而易见的第一选择，因为期物和执行器将处理唤醒器。为了构建我们的唤醒器，我们从 `async_runtime/src/waker.rs` 文件中的以下导入开始：
+
+```rust
+use std::task::{RawWaker, RawWakerVTable};
+```
+
+然后我们构建我们的唤醒器虚拟表：
+
+```rust
+static VTABLE: RawWakerVTable = RawWakerVTable::new(
+    my_clone,
+    my_wake,
+    my_wake_by_ref,
+    my_drop,
+);
+```
+
+我们可以随意命名这些函数，只要它们具有正确的函数签名即可。`RawWakerVTable` 是一个虚拟函数指针表，`RawWaker` 指向它并调用它在其生命周期中执行操作。例如，如果在 `RawWaker` 上调用 `clone` 函数，则会调用 `RawWakerVTable` 中的 `my_clone` 函数。我们将尽可能简单地实现这些函数，但我们可以了解 `RawWakerVTable` 如何被利用。例如，具有静态生命周期且线程安全的数据结构可以通过与 `RawWakerVTable` 中的函数交互来跟踪我们系统中的唤醒器。
+
+我们可以从我们的 `clone` 函数开始。这通常在我们轮询函数时被调用，因为我们需要在执行器中克隆唤醒器的原子引用，将其包装在上下文中，并传递给正在轮询的期物。我们的克隆实现形式如下：
+
+```rust
+unsafe fn my_clone(raw_waker: *const ()) -> RawWaker {
+    RawWaker::new(raw_waker, &VTABLE)
+}
+```
+
+我们的 `wake` 和 `wake_by_ref` 函数在应该再次轮询期物时被调用，因为等待的期物已就绪。对于我们的项目，我们将在没有被唤醒器提示的情况下轮询我们的期物以查看它们是否就绪，因此我们简单的实现定义如下：
+
+```rust
+unsafe fn my_wake(raw_waker: *const ()) {
+    drop(Box::from_raw(raw_waker as *mut u32));
+}
+unsafe fn my_wake_by_ref(_raw_waker: *const ()) {
+}
+```
+
+`my_wake` 函数将原始指针转换回 box 并丢弃它。这是合理的，因为 `my_wake` 应该消费唤醒器。`my_wake_by_ref` 函数什么也不做。它与 `my_wake` 函数相同，但不消费唤醒器。如果我们想尝试通知执行器，我们可以在这些函数中设置一个 `AtomicBool` 为 `true`。然后我们可以设计某种执行器机制，在费心轮询期物之前检查 `AtomicBool`，因为检查 `AtomicBool` 的计算成本低于轮询一个期物。我们也可以使用另一个队列来发送任务就绪通知，但对于我们的服务器实现，我们将坚持在不进行检查的情况下进行轮询。
+
+当我们的任务完成或被取消时，我们不再需要轮询我们的任务，并且我们的唤醒器被丢弃。我们的 `drop` 函数形式如下：
+
+```rust
+unsafe fn my_drop(raw_waker: *const ()) {
+    drop(Box::from_raw(raw_waker as *mut u32));
+}
+```
+
+这就是我们将 box 转换回原始指针并丢弃它的地方。
+
+现在我们已经为唤醒器定义了所有函数。我们只需要一个函数来创建唤醒器：
+
+```rust
+pub fn create_raw_waker() -> RawWaker {
+    let data = Box::into_raw(Box::new(42u32));
+    RawWaker::new(data as *const (), &VTABLE)
+}
+```
+
+我们传入一些虚拟数据，并使用对我们的函数表的引用创建 `RawWaker`。我们可以看到这种原始方法的可定制性。我们可以有多个 `RawWakerVTable` 定义，并且我们可以根据传递给 `create_raw_waker` 函数的内容构造不同于 `RawWaker` 的函数表。在我们的执行器中，我们可以根据正在处理的期物类型来改变输入。我们也可以传递一个执行器持有的数据结构的引用，而不是 u32 数字 42。数字 42 没有特殊意义；它只是传递数据的一个例子。传递的数据结构随后可以在绑定到表的函数中被引用。
+
+尽管我们已经构建了唤醒器的基本骨架，但我们可以体会到选择构建自己的唤醒器所具有的强大功能和可定制性。考虑到我们需要使用我们的唤醒器在执行器中执行任务，我们现在可以继续构建我们的执行器。
+
+#### 构建我们的执行器
+
+从高层次看，我们的执行器将消费期物，将它们转换为可以由我们的执行器运行的任务，返回一个句柄，并将任务放入队列。定期地，我们的执行器还将轮询该队列上的任务。我们将执行器放在 `async_runtime/src/executor.rs` 文件中。首先，我们需要以下导入：
+
+```rust
+use std::{
+    future::Future,
+    sync::{Arc, mpsc},
+    task::{Context, Poll, Waker},
+    pin::Pin,
+    collections::VecDeque
+};
+use crate::waker::create_raw_waker;
+```
+
+在开始编写执行器之前，我们需要定义将在执行器中传递的任务结构体：
+
+```rust
+pub struct Task {
+    future: Pin<Box<dyn Future<Output = ()> + Send>>,
+    waker: Arc<Waker>,
+}
+```
+
+当查看 `Task` 结构体时，你可能感觉有些不对劲，你是对的。我们 `Task` 结构体中的期物返回 `()`。然而，我们希望能够运行返回不同数据类型的任务。如果只能返回一种数据类型，运行时将会非常糟糕。你可能觉得需要传入一个泛型参数，导致以下代码：
+
+```rust
+pub struct Task<T> {
+    future: Pin<Box<dyn Future<Output = T> + Send>>,
+    waker: Arc<Waker>,
+}
+```
+
+然而，对于泛型，编译器将查看 `Task<T>` 的所有实例，并为每个 `T` 的变体生成结构体。此外，我们的执行器将需要 `T` 泛型参数来处理 `Task<T>`。这将导致为每个 `T` 的变体生成多个执行器，从而造成混乱。相反，我们用一个异步块包装我们的期物，获取期物的结果，并通过通道发送该结果。因此，我们所有任务的签名都返回 `()`，但我们仍然可以从期物中提取结果。我们将在执行器的 `spawn` 函数中看到这是如何实现的。以下是我们的执行器的概要：
+
+```rust
+pub struct Executor {
+    pub polling: VecDeque<Task>,
+}
+impl Executor {
+    pub fn new() -> Self {
+        Executor {
+            polling: VecDeque::new(),
+        }
+    }
+    pub fn spawn<F, T>(&mut self, future: F) -> mpsc::Receiver<T>
+    where
+        F: Future<Output = T> + 'static + Send,
+        T: Send + 'static,
+    {
+        // ...
+    }
+    pub fn poll(&mut self) {
+        // ...
+    }
+    pub fn create_waker(&self) -> Arc<Waker> {
+        Arc::new(unsafe { Waker::from_raw(create_raw_waker()) })
+    }
+}
+```
+
+`Executor` 的 `polling` 字段是我们将放入已生成任务以供轮询的地方。
+
+注意我们的 `Executor` 中的 `create_waker` 函数。记住，我们的 `Executor` 运行在一个线程上，一次只能处理一个期物。如果我们的 `Executor` 包含一个数据集合，并且我们配置了 `create_raw_waker` 来处理它，我们可以将一个引用传递给 `create_raw_waker` 函数。我们的唤醒器可以不安全地访问数据集合，因为一次只有一个期物被处理，因此不会同时有多个来自期物的可变引用。
+
+一旦任务被轮询，如果任务仍处于挂起状态，我们将把任务放回轮询队列以便再次轮询。为了最初将任务放入队列，我们使用 `spawn` 函数：
+
+```rust
+pub fn spawn<F, T>(&mut self, future: F) -> mpsc::Receiver<T>
+where
+    F: Future<Output = T> + 'static + Send,
+    T: Send + 'static,
+{
+    let (tx, rx) = mpsc::channel();
+    let future: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(
+        async move {
+            let result = future.await;
+            let _ = tx.send(result);
+        }
+    );
+    let task = Task {
+        future,
+        waker: self.create_waker(),
+    };
+    self.polling.push_back(task);
+    rx
+}
+```
+
+我们使用通道返回一个句柄，并将期物的返回值转换为 `()`。
+
+如果暴露内部通道不符合你的风格，你可以为生成任务创建以下 `JoinHandle` 结构体来返回：
+
+```rust
+pub struct JoinHandle<T> {
+    receiver: mpsc::Receiver<T>,
+}
+
+impl<T> JoinHandle<T> {
+    pub fn await(self) -> Result<T, mpsc::RecvError> {
+        self.receiver.recv()
+    }
+}
+```
+
+为你的返回句柄提供以下等待语法：
+
+```rust
+match handle.await() {
+    Ok(result) => println!("Received: {}", result),
+    Err(e) => println!("Error receiving result: {}", e),
+}
+```
+
+现在我们已经将任务放入了轮询队列，我们可以使用执行器的轮询函数来轮询它：
+
+```rust
+pub fn poll(&mut self) {
+    let mut task = match self.polling.pop_front() {
+        Some(task) => task,
+        None => return,
+    };
+    let waker = task.waker.clone();
+    let context = &mut Context::from_waker(&waker);
+    match task.future.as_mut().poll(context) {
+        Poll::Ready(()) => {}
+        Poll::Pending => {
+            self.polling.push_back(task);
+        }
+    }
+}
+```
+
+我们只是从队列前端弹出任务，将唤醒器的引用包装在上下文中，并将其传递给期物的 `poll` 函数。如果期物已就绪，我们不需要做任何事情，因为我们通过通道发送结果，然后期物被丢弃。如果期物处于挂起状态，我们就把它放回队列。
+
+现在，我们的异步运行时的核心已经完成，我们可以运行异步代码了。在我们构建异步运行时模块的其余部分之前，我们应该绕个道，运行一下我们的执行器。你不仅一定会对它能够工作感到兴奋，而且还可能想尝试自定义期物的处理方式。现在是感受我们的系统如何运作的好时机。
+
+#### 运行我们的执行器
+
+运行我们的异步运行时相当简单。在我们异步运行时模块的 `main.rs` 文件中，我们导入以下内容：
+
+```rust
+use std::{
+    future::Future,
+    task::{Context, Poll},
+    pin::Pin
+};
+mod executor;
+mod waker;
+```
+
+我们需要一个基本的期物来追踪我们的系统是如何运行的。我们在整本书中一直使用计数期物，因为它是一个如此容易实现的期物，它根据状态返回 `Pending` 或 `Ready`。作为快速参考（希望你现在能凭记忆编写），计数期物形式如下：
+
+```rust
+pub struct CountingFuture {
+    pub count: i32,
+}
+
+impl Future for CountingFuture {
+    type Output = i32;
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output> {
+        self.count += 1;
+        if self.count == 4 {
+            println!("CountingFuture is done!");
+            Poll::Ready(self.count)
+        } else {
+            cx.waker().wake_by_ref();
+            println!("CountingFuture is not done yet! {}",
+                self.count
+            );
+            Poll::Pending
+        }
+    }
+}
+```
+
+我们定义期物，定义执行器，生成期物，然后运行它们，代码如下：
+
+```rust
+fn main() {
+    let counter = CountingFuture { count: 0 };
+    let counter_two = CountingFuture { count: 0 };
+    let mut executor = executor::Executor::new();
+    let handle = executor.spawn(counter);
+    let _handle_two = executor.spawn(counter_two);
+    std::thread::spawn(move || {
+        loop {
+            executor.poll();
+        }
+    });
+    let result = handle.recv().unwrap();
+    println!("Result: {}", result);
+}
+```
+
+我们生成一个线程并运行一个无限循环来轮询执行器中的期物。在这个循环运行的同时，我们等待其中一个期物的结果。在我们的服务器中，我们将正确地实现我们的执行器，以便它们能够在整个程序的生命周期内持续接收期物。这个快速实现给我们以下打印输出：
+
+```
+    CountingFuture is not done yet! 1
+    CountingFuture is not done yet! 1
+    CountingFuture is not done yet! 2
+    CountingFuture is not done yet! 2
+    CountingFuture is not done yet! 3
+    CountingFuture is not done yet! 3
+    CountingFuture is done!
+    CountingFuture is done!
+    Result: 4
+```
+
+我们可以看到它工作正常！我们有了一个仅使用标准库运行的异步运行时！
+
+记住我们的唤醒器实际上没有做任何事情。无论怎样，我们都在执行器队列中轮询我们的期物。如果你在 `CountingFuture` 的 `poll` 函数中注释掉 `cx.waker().wake_by_ref();` 这一行，你会得到完全相同的结果，这与像 `smol` 或 `Tokio` 这样的运行时中的情况不同。这告诉我们，成熟的运行时正在使用唤醒器来只轮询那些需要被唤醒的期物。这意味着成熟的运行时在轮询方面更高效。
+
+现在我们的异步运行时已经运行起来了，我们可以将其余的异步过程推进到终点。我们可以从一个发送器开始。
+
+#### 构建我们的发送器
+
+当通过 TCP 套接字发送数据时，我们必须允许执行器在当前连接被阻塞时切换到另一个异步任务。如果连接没有被阻塞，我们可以将字节写入流。在 `async_runtime/src/sender.rs` 文件中，我们从以下导入开始：
+
+```rust
+use std::{
+    future::Future,
+    task::{Context, Poll},
+    pin::Pin,
+    net::TcpStream,
+    io::{self, Write},
+    sync::{Arc, Mutex}
+};
+```
+
+我们的发送器本质上是一个期物。在 `poll` 函数期间，如果流被阻塞，我们将返回 `Pending`；如果流没有被阻塞，我们则将字节写入流。我们的发送器结构定义如下：
+
+```rust
+pub struct TcpSender {
+    pub stream: Arc<Mutex<TcpStream>>,
+    pub buffer: Vec<u8>
+}
+
+impl Future for TcpSender {
+    type Output = io::Result<()>;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output> {
+        // ...
+    }
+}
+```
+
+我们的 `TcpStream` 包装在 `Arc<Mutex<T>>` 中。我们使用 `Arc<Mutex<T>>` 以便可以将 `TcpStream` 传递给 `Sender` 和 `Receiver`。一旦我们通过流发送了字节，我们将需要使用 `Receiver` 期物来等待响应。
+
+对于 `TcpSender` 结构体中的 `poll` 函数，我们首先尝试获取流的锁：
+
+```rust
+let mut stream = match self.stream.try_lock() {
+    Ok(stream) => stream,
+    Err(_) => {
+        cx.waker().wake_by_ref();
+        return Poll::Pending;
+    }
+};
+```
+
+如果我们无法获取锁，我们返回 `Pending`，这样我们就不会阻塞执行器，任务将被放回队列以便再次轮询。一旦我们获得了锁，我们将其设置为非阻塞：
+
+```rust
+stream.set_nonblocking(true);
+```
+
+`set_nonblocking` 函数使得流从 `write`、`recv`、`read` 或 `send` 函数立即返回结果。如果 I/O 操作成功，结果将是 `Ok`。如果 I/O 操作返回一个 `io::ErrorKind::WouldBlock` 错误，则需要重试 I/O 操作，因为流被阻塞了。我们如下处理这些 I/O 操作结果：
+
+```rust
+match stream.write_all(&self.buffer) {
+    Ok(_) => {
+        Poll::Ready(Ok(()))
+    },
+    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+        cx.waker().wake_by_ref();
+        Poll::Pending
+    },
+    Err(e) => Poll::Ready(Err(e))
+}
+```
+
+现在我们定义了一个发送器期物，所以我们可以继续构建我们的接收器期物。
+
+#### 构建我们的接收器
+
+我们的接收器将等待流中的数据，如果字节不在流中可供读取，则返回 `Pending`。为了构建这个期物，我们在 `async_runtime/src/receiver.rs` 文件中导入以下内容：
+
+```rust
+use std::{
+    future::Future,
+    task::{Context, Poll},
+    pin::Pin,
+    net::TcpStream,
+    io::{self, Read},
+    sync::{Arc, Mutex}
+};
+```
+
+鉴于我们要返回字节，接收器期物采用以下形式应该不会令人惊讶：
+
+```rust
+pub struct TcpReceiver {
+    pub stream: Arc<Mutex<TcpStream>>,
+    pub buffer: Vec<u8>
+}
+impl Future for TcpReceiver {
+    type Output = io::Result<Vec<u8>>;
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output> {
+        // ...
+    }
+}
+```
+
+在我们的 `poll` 函数中，我们获取流的锁并将其设置为非阻塞，就像我们在发送器期物中所做的那样：
+
+```rust
+let mut stream = match self.stream.try_lock() {
+    Ok(stream) => stream,
+    Err(_) => {
+        cx.waker().wake_by_ref();
+        return Poll::Pending;
+    }
+};
+
+stream.set_nonblocking(true);
+```
+
+接下来我们处理流的读取：
+
+```rust
+let mut local_buf = [0; 1024];
+
+match stream.read(&mut local_buf) {
+    Ok(0) => {
+        Poll::Ready(Ok(self.buffer.to_vec()))
+    },
+    Ok(n) => {
+        std::mem::drop(stream);
+        self.buffer.extend_from_slice(&local_buf[..n]);
+        cx.waker().wake_by_ref();
+        Poll::Pending
+    },
+    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+        cx.waker().wake_by_ref();
+        Poll::Pending
+    },
+    Err(e) => Poll::Ready(Err(e))
+}
+```
+
+现在我们已经拥有了让服务器运行所需的所有异步功能。然而，还有一个基本的期物可以让我们构建，以便让同步代码也具备异步特性：睡眠期物。
+
+#### 构建我们的睡眠器
+
+我们之前已经介绍过，希望你自己能够实现它。不过，作为参考，我们的 `async_runtime/src/sleep.rs` 文件将存放我们的睡眠期物。我们导入以下内容：
+
+```rust
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::{Duration, Instant},
+};
+```
+
+我们的 `Sleep` 结构体形式如下：
+
+```rust
+pub struct Sleep {
+    when: Instant,
+}
+impl Sleep {
+    pub fn new(duration: Duration) -> Self {
+        Sleep {
+            when: Instant::now() + duration,
+        }
+    }
+}
+```
+
+并且我们的 `Sleep` 期物实现了 `Future` trait：
+
+```rust
+impl Future for Sleep {
+    type Output = ();
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>)
+        -> Poll<Self::Output> {
+        let now = Instant::now();
+        if now >= self.when {
+            Poll::Ready(())
+        } else {
+            cx.waker().wake_by_ref();
+            Poll::Pending
+        }
+    }
+}
+```
+
+现在我们的异步系统已经具备了所需的一切。为了使我们的异步运行时组件公开可用，我们在 `async_runtime/src/lib.rs` 文件中添加以下代码：
+
+```rust
+pub mod executor;
+pub mod waker;
+pub mod receiver;
+pub mod sleep;
+pub mod sender;
+```
+
+我们现在可以将我们的组件导入到服务器中。考虑到所有功能都已完备，我们应该使用它们来构建我们的服务器。
+
+### 构建我们的服务器
+
+为了构建我们的服务器，我们需要我们编码的数据和异步模块。要安装这些，`Cargo.toml` 文件依赖项形式如下：
+
+```toml
+[dependencies]
+data_layer = { path = "../data_layer" }
+async_runtime = { path = "../async_runtime" }
+
+[profile.release]
+opt-level = 'z'
+```
+
+我们使用 `opt-level = 'z'` 来优化二进制文件大小。
+
+我们服务器的所有代码都可以放在 `main.rs` 文件中，该文件需要这些导入：
+
+```rust
+use std::{
+    thread,
+    sync::{mpsc::channel, atomic::{AtomicBool, Ordering}},
+    io::{self, Read, Write, ErrorKind, Cursor},
+    net::{TcpListener, TcpStream}
+};
+use data_layer::data::Data;
+use async_runtime::{
+    executor::Executor,
+    sleep::Sleep
+};
+```
+
+现在我们拥有了所需的一切，我们可以构建接受请求的代码了。
+
+#### 接受请求
+
+我们可以让主线程监听传入的 TCP 请求。然后主线程将请求分发给三个线程和执行器，如图 10-1 所示。
+
+**图 10-1. 处理传入请求**
+
+我们还希望在没有请求要处理时，线程能够进入停放状态。为了与停放线程通信，我们为每个线程准备一个 `AtomicBool`：
+
+```rust
+static FLAGS: [AtomicBool; 3] = [
+    AtomicBool::new(false),
+    AtomicBool::new(false),
+    AtomicBool::new(false),
+];
+```
+
+每个 `AtomicBool` 代表一个线程。如果 `AtomicBool` 为 `false`，表示线程未停放。如果 `AtomicBool` 为 `true`，那么我们的路由器就知道我们的线程已停放，我们必须在向线程发送请求之前唤醒它。
+
+现在我们有了 `FLAGS`，我们必须处理每个线程的传入请求。在线程内部，我们创建一个执行器，然后尝试在线程的通道中接收消息。如果通道中有请求，我们就在该执行器上生成一个任务。如果没有传入请求，我们检查是否有等待轮询的任务。如果没有任务，那么线程将 `FLAG` 设置为 `true` 并停放线程。如果有任何任务需要轮询，那么我们就在循环结束时轮询该任务。我们可以用这个宏来执行这个过程：
+
+```rust
+macro_rules! spawn_worker {
+    ($name:expr, $rx:expr, $flag:expr) => {
+        thread::spawn(move || {
+            let mut executor = Executor::new();
+            loop {
+                if let Ok(stream) = $rx.try_recv() {
+                    println!(
+                        "{} Received connection: {}",
+                        $name,
+                        stream.peer_addr().unwrap()
+                    );
+                    executor.spawn(handle_client(stream));
+                } else {
+                    if executor.polling.len() == 0 {
+                        println!("{} is sleeping", $name);
+                        $flag.store(true, Ordering::SeqCst);
+                        thread::park();
+                    }
+                }
+                executor.poll();
+            }
+        });
+    };
+}
+```
+
+在这个宏中，我们接受线程的名称用于日志记录、用于接收传入请求的通道的接收端，以及用于通知系统线程何时停放的标志。
+
+关于创建复杂宏的更多信息，可以阅读 Ingvar Stepanyan 的《在 Rust 中编写复杂宏》。
+
+我们可以在主函数中编排请求的接受：
+
+```rust
+fn main() -> io::Result<()> {
+    // ...
+    Ok(())
+}
+```
+
+首先，我们定义用于向线程发送请求的通道：
+
+```rust
+let (one_tx, one_rx) = channel::<TcpStream>();
+let (two_tx, two_rx) = channel::<TcpStream>();
+let (three_tx, three_rx) = channel::<TcpStream>();
+```
+
+然后我们创建处理请求的线程：
+
+```rust
+let one = spawn_worker!("One", one_rx, &FLAGS[0]);
+let two = spawn_worker!("Two", two_rx, &FLAGS[1]);
+let three = spawn_worker!("Three", three_rx, &FLAGS[2]);
+```
+
+现在我们的执行器在它们自己的线程中运行，等待我们的 TCP 监听器向它们发送请求。我们需要保存并引用线程句柄和线程通道发送器，以便我们可以唤醒并向单个线程发送请求。我们可以使用以下代码与线程交互：
+
+```rust
+let router = [one_tx, two_tx, three_tx];
+let threads = [one, two, three];
+let mut index = 0;
+
+let listener = TcpListener::bind("127.0.0.1:7878");
+println!("Server listening on port 7878");
+
+for stream in listener.incoming() {
+    // ...
+}
+```
+
+我们现在只需要处理传入的 TCP 请求：
+
+```rust
+for stream in listener.incoming() {
+    match stream {
+        Ok(stream) => {
+            let _ = router[index].send(stream);
+            if FLAGS[index].load(Ordering::SeqCst) {
+                FLAGS[index].store(false, Ordering::SeqCst);
+                threads[index].thread().unpark();
+            }
+            index += 1; // 循环遍历线程索引
+            if index == 3 {
+                index = 0;
+            }
+        }
+        Err(e) => {
+            println!("Connection failed: {}", e);
+        }
+    }
+}
+```
+
+一旦我们收到 TCP 请求，我们就将 TCP 流发送给一个线程，检查线程是否已停放，并在需要时唤醒该线程。接下来，我们将索引移动到下一个线程，以便在所有线程之间均匀分配请求。
+
+那么，一旦我们将请求发送给执行器，我们如何处理这些请求呢？我们处理它们。
+
+#### 处理请求
+
+在处理请求时，我们回想一下 `handle_stream` 函数是在执行器中调用的。我们的处理异步函数形式如下：
+
+```rust
+async fn handle_client(mut stream: TcpStream) -> std::io::Result<()> {
+    stream.set_nonblocking(true);
+    let mut buffer = Vec::new();
+    let mut local_buf = [0; 1024];
+    loop {
+        // ...
+    }
+    match Data::deserialize(&mut Cursor::new(buffer.as_slice())) {
+        Ok(message) => {
+            println!("Received message: {:?}", message);
+        },
+        Err(e) => {
+            println!("Failed to decode message: {}", e);
+        }
+    }
+    Sleep::new(std::time::Duration::from_secs(1)).await;
+    stream.write_all(b"Hello, client!")?;
+    Ok(())
+}
+```
+
+这看起来应该类似于我们在异步运行时中构建的发送器和接收器期物。在这里，我们添加了 1 秒的异步睡眠。这只是为了模拟正在进行的工作。这也将确保我们的异步正常工作。如果我们的异步没有正常工作，我们发送 10 个请求，那么总时间将超过 10 秒。
+
+在我们的循环内部，我们处理传入的流：
+
+```rust
+match stream.read(&mut local_buf) {
+    Ok(0) => {
+        break;
+    },
+    Ok(len) => {
+        buffer.extend_from_slice(&local_buf[..len]);
+    },
+    Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+        if buffer.len() > 0 {
+            break;
+        }
+        Sleep::new(std::time::Duration::from_millis(10)).await;
+        continue;
+    },
+    Err(e) => {
+        println!("Failed to read from connection: {}", e);
+    }
+}
+```
+
+如果发生阻塞，我们引入一个微小的异步睡眠，这样执行器就会将请求处理放回队列以轮询其他请求处理。
+
+我们的服务器现在已经完全功能完备。剩下唯一需要编码的部分是我们的客户端。
+
+#### 构建我们的异步客户端
+
+因为我们的客户端也依赖于相同的依赖项，客户端的 `Cargo.toml` 具有以下依赖项并不奇怪：
+
+```toml
+[dependencies]
+data_layer = { path = "../data_layer" }
+async_runtime = { path = "../async_runtime" }
+```
+
+在我们的 `main.rs` 文件中，我们需要以下导入：
+
+```rust
+use std::{
+    io,
+    sync::{Arc, Mutex},
+    net::TcpStream,
+    time::Instant
+};
+
+use data_layer::data::Data;
+use async_runtime::{
+    executor::Executor,
+    receiver::TcpReceiver,
+    sender::TcpSender,
+};
+```
+
+为了发送，我们实现来自异步运行时的发送和接收期物：
+
+```rust
+async fn send_data(field1: u32, field2: u16, field3: String)
+-> io::Result<String> {
+    let stream = Arc::new(Mutex::new(TcpStream::connect(
+        "127.0.0.1:7878"
+    )?));
+    let message = Data {field1, field2, field3};
+    TcpSender {
+        stream: stream.clone(),
+        buffer: message.serialize()?,
+    }.await?;
+    let receiver = TcpReceiver {
+        stream: stream.clone(),
+        buffer: Vec::new()
+    };
+    String::from_utf8(receiver.await?).map_err(|_|
+        io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF-8")
+    )
+}
+```
+
+我们现在可以调用我们的异步 `send_data` 函数 4000 次，并等待所有这些句柄：
+
+```rust
+fn main() -> io::Result<()> {
+    let mut executor = Executor::new();
+    let mut handles = Vec::new();
+    let start = Instant::now();
+    for i in 0..4000 {
+        let handle = executor.spawn(send_data(
+            i, i as u16, format!("Hello, server! {}", i)
+        ));
+        handles.push(handle);
+    }
+    std::thread::spawn(move || {
+        loop {
+            executor.poll();
+        }
+    });
+
+    println!("Waiting for result...");
+    for handle in handles {
+        match handle.recv().unwrap() {
+            Ok(result) => println!("Result: {}", result),
+            Err(e) => println!("Error: {}", e)
+        };
+    }
+    let duration = start.elapsed();
+    println!("Time elapsed in expensive_function() is: {:?}", duration);
+    Ok(())
+}
+```
+
+我们的测试已经准备就绪。如果你在不同的终端中运行服务器和客户端，你将看到所有打印输出都显示请求正在被处理。整个客户端进程大约需要 1.2 秒，这意味着我们的异步系统正在运行。就是这样！我们已经构建了一个零第三方依赖的异步服务器！
+
+### 总结
+
+在本章中，我们仅使用标准库构建了一个相当高效的异步运行时。这种性能部分源于我们用 Rust 编码服务器。另一个因素是我们的异步模块提高了 I/O 密集型任务（如连接）的资源利用率。当然，我们的服务器不会像 Tokio 这样的运行时那样高效，但它是可用的。
+
+我们并不建议你开始从项目中移除 Tokio 和 Web 框架，因为许多 crate 都是为了与 Tokio 等运行时集成而构建的。你会失去与第三方 crate 的许多集成，并且你的运行时也不会那么高效。但是，你可以在程序中同时激活另一个运行时。例如，我们可以使用 Tokio 通道将任务发送到我们的自定义异步运行时。这意味着 Tokio 可以在等待自定义异步运行时中任务完成的同时，处理其他异步 Tokio 任务。这种方法很有用，当你需要一个像 Tokio 这样成熟的运行时来处理标准的异步任务（如传入请求），但同时你也非常需要以特定的方式处理某个利基问题的任务。例如，你可能构建了一个键值存储，并阅读了关于如何在其上处理事务的最新计算机科学论文。然后你想直接在自定义异步运行时中实现该逻辑。
+
+我们可以得出结论，构建自己的异步运行时既不是最好的方法，也不是最差的方法。了解成熟的运行时并能够构建自己的运行时，是两全其美。同时掌握这两种工具，并知道在何时何地应用它们，比做一个工具的传道者要好得多。然而，在你拿出它们并用它们解决问题之前，你需要练习这些工具。我们建议你在各种项目中继续尝试自定义异步运行时。尝试在唤醒器周围使用不同类型的数据是探索多种方法的一个良好开端。
+
+测试是探索和完善方法的重要部分。测试使你能够获得关于异步代码和实现的深入、直接的反馈。在第 11 章中，我们将介绍如何测试异步代码，以便你能够继续探索异步概念和实现。
+
+## 第十一章 测试
+
+到目前为止，我们已经知道用 Rust 编写异步系统有多么强大。然而，在 Rust 中构建大型异步系统时，我们需要知道如何测试我们的异步代码。这是因为系统的复杂性会随着系统规模的增加而增长。
+
+测试增加了我们正在实现的代码的反馈，使我们的代码编写更快、更安全。例如，如果我们有一个大型代码库，需要修改或向一段代码中添加功能，如果我们必须启动整个系统并运行以查看代码是否工作，那将既缓慢又危险。相反，修改或添加我们需要的代码并运行该段代码的特定测试，不仅提供了更快的反馈循环，还使我们能够测试更多的边缘情况，从而使我们的代码更安全。在本章中，我们将探讨测试异步代码以及我们的代码与外部系统之间接口的各种方法。
+
+通过本章的学习，你将能够构建隔离的测试，在那里你可以模拟接口并检查对这些接口的调用。这使你能够构建真正隔离的原子测试。你还将能够测试同步陷阱，如死锁、竞态条件和阻塞异步任务的通道容量问题。最后，你还将学习如何模拟与网络（如服务器）的交互，获得对所有期物的细粒度测试控制，并知道何时轮询它们以查看你的系统在不同轮询条件下的进展情况。
+
+我们可以从覆盖同步测试的基础知识开始我们的测试之旅。
+
+### 进行基本的同步测试
+
+在第179页的“构建隔离模块”中，我们构建了一个具有同步接口的异步运行时环境。毫不奇怪，由于该接口只包含几个同步函数，隔离模块是最容易测试的之一。我们可以通过执行同步测试来开始我们的测试之旅。
+
+在构建我们的测试之前，我们需要在 `Cargo.toml` 中添加以下依赖项：
+
+```toml
+[dev-dependencies]
+mockall = "0.11.4"
+```
+
+`mockall` 依赖项将使我们能够模拟 trait 及其函数，以便我们可以检查输入和模拟输出。
+
+对于我们隔离模块的接口，我们回想一下，这两个函数是 `spawn`（它返回一个键）和 `get_result`（它返回我们生成的异步任务的结果）。我们可以为这些交互定义以下 trait：
+
+```rust
+pub trait AsyncProcess<X, Y, Z> {
+    fn spawn(&self, input: X) -> Result<Y, String>;
+    fn get_result(&self, key: Y) -> Result<Z, String>;
+}
+```
+
+这里，我们使用泛型参数，以便我们可以改变输入、输出和使用的键的类型。我们现在可以继续我们的异步函数，在那里我们生成一个任务，打印一些内容，然后从异步函数获取结果并处理该结果：
+
+```rust
+fn do_something<T>(async_handle: T, input: i32) -> Result<i32, String>
+where
+    T: AsyncProcess<i32, String, i32>
+{
+    let key = async_handle.spawn(input);
+    println!("something is happening");
+    let result = async_handle.get_result(key);
+    if result > 10 {
+        return Err("result is too big".to_string());
+    }
+    if result == 8 {
+        return Ok(result * 2)
+    }
+    Ok(result * 3)
+}
+```
+
+这里，我们依赖于**依赖注入**。在依赖注入中，我们将一个结构体、对象或函数作为参数传递给另一个函数。我们传入该函数的对象随后执行计算。
+
+对于我们来说，我们传入一个实现了该 trait 的结构体，然后调用该 trait。这很强大。例如，我们可以为一个结构体实现一个读取 trait，该结构体从数据库访问读取函数。然而，我们可以获得另一个处理从文件读取的结构体，并也实现读取 trait。根据我们想要的存储解决方案，我们只需将该句柄提供给函数。你可能已经猜到，我们可以创建一个模拟结构体，并为在该模拟结构体上实现的 trait 实现我们想要的任何功能，然后将模拟结构体传递给我们要测试的函数。然而，如果我们使用 mockall 来正确地模拟我们的结构体，我们还可以断言某些条件，例如传递给句柄函数的参数。我们的测试布局采用以下形式：
+
+```rust
+#[cfg(test)]
+mod get_team_processes_tests {
+    use super::*;
+    use mockall::predicate::*;
+    use mockall::mock;
+
+    mock! {
+        DatabaseHandler {}
+        impl AsyncProcess<i32, String, i32> for DatabaseHandler {
+            fn spawn(&self, input: i32) -> Result<String, String>;
+            fn get_result(&self, key: String) -> Result<i32, String>;
+        }
+    }
+    #[test]
+    fn do_something_fail() {
+        // ...
+    }
+}
+```
+
+在我们的 `do_something_fail` 测试函数中，我们定义模拟句柄，并断言将 `4` 传递给 `spawn` 函数，然后该函数将返回一个 `test_key`：
+
+```rust
+let mut handle = MockDatabaseHandler::new();
+handle.expect_spawn()
+    .with(eq(4))
+    .returning(|_| { Ok("test_key".to_string()) });
+```
+
+现在我们有了 `test_key`，我们可以假设它将被传递给我们的 `get_result` 函数，并且我们声明 `get_result` 将返回 `11`：
+
+```rust
+handle.expect_get_result().with(eq("test_key".to_string()))
+    .returning(|_| { Ok(11) });
+```
+
+我们可以假设我们正在测试的函数将返回一个错误，所以我们断言这一点：
+
+```rust
+let outcome = do_something(handle, 4);
+assert_eq!(outcome, Err("result is too big".to_string()));
+```
+
+我们在测试过程中遵循行业标准的 Arrange、Act、Assert 模式：
+
+**Arrange（准备）**
+我们设置测试环境并定义模拟的预期行为。（这是在创建模拟句柄并指定预期输入和输出时完成的。）
+
+**Act（执行）**
+我们在准备好的条件下执行被测试的函数。（这发生在我们调用 `do_something(handle, 4)` 时。）
+
+**Assert（断言）**
+我们验证结果是否符合我们的预期。（这是我们使用 `assert_eq!` 检查结果的地方。）
+
+现在我们的测试已经定义好了，我们可以使用 `cargo test` 命令运行它，结果如下打印输出：
+
+```
+running 1 test
+test get_team_processes_tests::do_something_fail ... ok
+```
+
+我们的测试通过了。尽管为了简洁起见，我们不会在本书中定义每一个可能的结果，但尝试所有的边缘情况对你来说是一个很好的练习单元测试的机会。
+
+模拟功能强大，因为它使我们能够隔离逻辑。假设我们的 `do_something` 函数位于一个要求数据库处于特定状态的应用程序中。例如，如果 `do_something` 处理数据库中团队成员的数量，那么团队很可能需要存在于数据库中。然而，如果我们想要运行 `do_something`，我们不希望在运行代码之前必须填充数据库并确保一切准备就绪。这样做有几个原因。如果我们想要为另一个边缘案例重新定义参数，我们将不得不重新调整数据库。这将花费很长时间，并且每次运行代码时，我们都必须再次摆弄数据库。模拟使我们的测试具有原子性。我们可以在不需要设置环境的情况下反复运行我们的代码。采用测试驱动开发的开发人员通常以更快的速度和更少的错误进行开发。
+
+我们已经为程序定义了基本的模拟，但我们不会在所有地方都使用隔离模块。你的代码可能是完全异步的。尤其是在进行 Web 开发时。你可能希望在异步模块中测试异步函数。为此，我们需要涵盖异步模拟。
+
+### 模拟异步代码
+
+为了测试我们的异步 trait，我们需要在测试函数中有一个异步运行时。你可以自由选择你习惯的任何运行时，但对于我们的示例，我们将继续使用 Tokio，这给我们以下依赖项：
+
+```toml
+[dependencies]
+tokio = { version = "1.34.0", features = ["full"] }
+
+[dev-dependencies]
+mockall = "0.11.4"
+```
+
+我们的 trait 不再需要两个函数，因为我们的 trait 是异步的；异步函数将返回一个我们可以等待的句柄。所以我们只有 `get_result` 函数，因为句柄在异步代码中管理：
+
+```rust
+use std::future::Future;
+
+pub trait AsyncProcess<X, Z> {
+    fn get_result(&self, key: X) -> impl Future<Output = Result<Z, String>> + Send + 'static;
+}
+```
+
+我们 `AsyncProcess` trait 中的 `get_result` 函数返回一个期物，而不是 `get_result` 本身是一个异步函数。这种去糖化使我们能够对期物实现的 trait 进行更多控制。
+
+我们的 `do_something` 函数也重新定义如下：
+
+```rust
+async fn do_something<T>(async_handle: T, input: i32) -> Result<i32, String>
+where
+    T: AsyncProcess<i32, i32> + Send + Sync + 'static
+{
+    println!("something is happening");
+    let result: i32 = async_handle.get_result(input).await?;
+    if result > 10 {
+        return Err("result is too big".to_string());
+    }
+    if result == 8 {
+        return Ok(result * 2)
+    }
+    Ok(result * 3)
+}
+```
+
+我们处理结果的逻辑保持不变：我们在打印语句之前生成任务，并在打印语句之后获取结果。然而，在我们进行任何模拟之前，我们必须确保我们的测试模块有以下导入：
+
+```rust
+use super::*;
+use mockall::predicate::*;
+use mockall::mock;
+use std::boxed::Box;
+```
+
+因为我们的 trait 现在只有一个函数，我们的模拟用以下代码重新定义：
+
+```rust
+mock! {
+    DatabaseHandler {}
+    impl AsyncProcess<i32, i32> for DatabaseHandler {
+        fn get_result(&self, key: i32) -> impl Future<Output = Result<i32, String>> + Send + 'static;
+    }
+}
+```
+
+现在我们的函数是异步的，我们需要在每个测试内部定义一个运行时，然后阻塞等待它。我们的测试不会都在一个线程上运行，所以我们可以通过在每个单独的测试中定义运行时来确保测试是原子的：
+
+```rust
+#[test]
+fn do_something_fail() {
+    let mut handle = MockDatabaseHandler::new();
+    handle.expect_get_result()
+        .with(eq(4))
+        .returning(
+            |_| {
+                Box::pin(async move { Ok(11) })
+            }
+        );
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let outcome = runtime.block_on(do_something(handle, 4));
+    assert_eq!(outcome, Err("result is too big".to_string()));
+}
+```
+
+现在我们已经为异步代码实现了模拟。我们建议将与 HTTP 请求或数据库连接等其他资源交互的流程实现为隔离的异步函数。这使得它们更容易模拟，从而使我们的代码更容易测试。然而，我们知道在异步中，对外部资源进行调用并不是我们在测试异步代码时唯一需要记住的事情。请记住，我们的异步代码也可能出现死锁等同步问题，所以我们需要测试这些。
+
+### 测试死锁
+
+在死锁中，异步任务由于锁而无法完成。并非本书中所有示例都暴露了异步系统可能出现的死锁，但死锁确实可能发生。创建死锁的一个简单例子是让两个异步任务尝试以相反的顺序访问相同的两个锁（图 11-1）。
+
+**图 11-1. 死锁**
+
+在图 11-1 中，任务一获取了锁一。任务二获取了锁二。然而，两个任务都没有释放自己的锁，同时每个任务都试图获取另一个已经被持有的锁。这导致死锁：这两个任务永远不会完成，因为它们永远无法获取它们试图获取的第二个锁。
+
+这种死锁不仅会阻碍这两个任务。如果其他任务需要访问这些锁，它们也会在生成时被阻塞；在我们的系统完全停滞之前，我们都不会意识到这一点。测试死锁很重要。通过单元测试，我们可以尝试在将代码集成到系统的其余部分之前捕获这些死锁。对于我们的测试，我们有如下大纲：
+
+```rust
+#[cfg(test)]
+mod tests {
+    use tokio::sync::Mutex;
+    use std::sync::Arc;
+    use tokio::time::{sleep, Duration, timeout};
+
+    #[tokio::test]
+    async fn test_deadlock_detection() {
+        // ...
+    }
+}
+```
+
+我们使用 `#[tokio::test]` 宏进行测试。这本质上与在测试函数中创建异步运行时相同。在我们的测试函数中，我们创建两个互斥锁和这些互斥锁的引用，这样两个任务都可以访问两个互斥锁：
+
+```rust
+let resource1 = Arc::new(Mutex::new(0));
+let resource2 = Arc::new(Mutex::new(0));
+
+let resource1_clone = Arc::clone(&resource1);
+let resource2_clone = Arc::clone(&resource2);
+```
+
+然后我们生成两个任务：
+
+```rust
+let handle1 = tokio::spawn(async move {
+    let _lock1 = resource1.lock().await;
+    sleep(Duration::from_millis(100)).await;
+    let _lock2 = resource2.lock().await;
+});
+
+let handle2 = tokio::spawn(async move {
+    let _lock2 = resource2_clone.lock().await;
+    sleep(Duration::from_millis(100)).await;
+    let _lock1 = resource1_clone.lock().await;
+});
+```
+
+我们的第一个任务先获取第一个互斥锁，在休眠后获取第二个互斥锁。第二个任务试图以相反的顺序获取锁。休眠函数将使两个任务都有时间在尝试获取第二个锁之前获取它们的第一个锁。我们现在想等待这些已生成的任务，但我们在测试死锁。如果发生死锁而我们没有设置超时，测试将无限期地挂起。为了避免这种情况，我们可以设置一个超时：
+
+```rust
+let result = timeout(Duration::from_secs(5), async {
+    let _ = handle1.await;
+    let _ = handle2.await;
+}).await;
+```
+
+超时时间相当长，但如果两个异步任务在 5 秒后仍未完成，我们可以断定发生了死锁。现在我们已经设置了超时，我们可以用以下代码检查它：
+
+```rust
+assert!(result.is_ok(), "A potential deadlock detected!");
+```
+
+运行我们的测试会得到以下打印输出：
+
+```
+thread 'tests::test_deadlock_detection' panicked at 'A potential deadlock detected!', src/main.rs:43:9
+note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
+test tests::test_deadlock_detection ... FAILED
+
+failures:
+    tests::test_deadlock_detection
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.01s
+```
+
+时间刚过 5 秒，我们得到一个有用的消息，提示检测到潜在的死锁。我们不仅捕获了死锁，还隔离了导致死锁的特定函数。
+
+另一种锁定问题称为**活锁**，其整体效果与死锁相同：活锁会导致系统停滞。在活锁中，两个或多个异步任务被阻塞。然而，与两个或多个异步任务持有锁且不进展不同，这两个或多个异步任务在相互响应但没有进展。一个简单的例子是两个异步任务在一个持续的循环中向对方回应相同的消息。死锁和活锁之间一个经典但清晰的类比是：死锁就像走廊里的两个人站着不动，等待对方移动但谁都不动。而活锁是两个人试图不断地侧身避开对方，但都向错误的方向迈步，导致持续的阻挡，以至于没有人通过。
+
+虽然我们应该不惜一切代价避免死锁，但它们的出现通常很明显，因为系统通常会停滞。然而，我们的代码可能会在不知不觉中默默地导致错误。这就是为什么我们需要测试竞态条件。
+
+### 测试竞态条件
+
+在竞态条件中，数据的状态发生了变化，但对该状态的引用却已过时。数据竞态的一个简单示例如图 11-2 所示。
+
+**图 11-2. 竞态条件**
+
+图 11-2 显示了两个异步任务从数据存储中获取一个数字并将其加一。由于第二个任务在第一个任务更新数据存储之前获取了数据，两个任务都从 10 开始增加，结果是数据变成 11，而它应该是 12。在本书中，我们通过互斥锁或防止数据竞态发生的特定原子操作来防止这种情况。比较并更新原子操作是防止此竞态条件示例发生的最简单方法。然而，尽管防止竞态条件是最好的方法，但如何做到这一点并不总是清晰的，我们需要探索如何测试我们的代码是否存在数据竞态。我们的测试大纲如下：
+
+```rust
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tokio::time::{sleep, Duration};
+    use tokio::runtime::Builder;
+
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+    async fn unsafe_add() {
+        let value = COUNTER.load(Ordering::SeqCst);
+        COUNTER.store(value + 1, Ordering::SeqCst);
+    }
+    #[test]
+    fn test_data_race() {
+        // ...
+    }
+}
+```
+
+我们没有执行原子加法，而是获取数字，增加数字，然后设置新值，这样我们就有机会出现图 11-2 所示的竞态条件。在我们的测试函数中，我们可以构建一个单线程运行时并生成 10,000 个 `unsafe_add` 任务。在我们处理完这些任务后，我们可以断言 `COUNTER` 为 10,000：
+
+```rust
+let runtime = Builder::new_current_thread().enable_all()
+    .build()
+    .unwrap();
+
+let mut handles = vec![];
+let total = 100000;
+
+for _ in 0..total {
+    let handle = runtime.spawn(unsafe_add());
+    handles.push(handle);
+}
+for handle in handles {
+    runtime.block_on(handle).unwrap();
+}
+assert_eq!(
+    COUNTER.load(Ordering::SeqCst),
+    total,
+    "race condition occurred!"
+);
+```
+
+如果我们运行测试，我们会看到它通过了。这是因为运行时只有一个线程，并且在获取和设置之间没有异步操作。但是，假设我们将运行时更改为多线程：
+
+```rust
+let runtime = tokio::runtime::Runtime::new().unwrap();
+```
+
+我们会得到以下错误：
+
+```
+thread 'tests::test_data_race' panicked at 'assertion failed: `(left == right)`
+    left: `99410`,
+    right: `100000`: race condition occurred!'
+```
+
+其中一些任务成为了竞态条件的受害者。假设我们在设置和获取之间放置另一个异步函数，例如睡眠函数：
+
+```rust
+let value = COUNTER.load(Ordering::SeqCst);
+sleep(Duration::from_secs(1)).await;
+COUNTER.store(value + 1, Ordering::SeqCst);
+```
+
+我们会得到以下错误：
+
+```
+thread 'tests::test_data_race' panicked at 'assertion failed: `(left == right)`
+    left: `1`,
+    right: `100000`: race condition occurred!'
+```
+
+我们所有的任务都成为了竞态条件的受害者。这是因为所有任务最初都读取了 `COUNTER`，在任何一个任务有机会写入之前，因为异步睡眠将控制权交还给了执行器，让其他异步任务读取 `COUNTER`。
+
+如果睡眠是非阻塞的，这种情况也会发生在单线程环境中。这凸显了如果担心竞态条件，需要使用多线程测试环境。我们还可以体会到我们改变任务周围参数的速度，并可以测试参数变化对任务的影响。
+
+我们知道互斥锁和原子值并不是让多个任务访问数据的唯一方法。我们可以使用通道在异步任务之间发送数据。因此，我们需要测试我们的通道容量。
+
+### 测试通道容量
+
+我们在一些示例中使用了无界通道，但有时我们希望限制通道的最大大小以防止过多的内存消耗。然而，如果通道达到其最大限制，发送者就无法向通道发送更多消息。我们可能有一个系统，例如一组参与者，我们需要查看如果我们向系统中发送太多消息，系统是否会堵塞。根据需求，我们可能需要系统在消息全部处理完之前放慢速度，但最好测试系统，以便了解它如何适用于我们的用例。
+
+对于我们的测试，布局如下：
+
+```rust
+#[cfg(test)]
+mod tests {
+    use tokio::sync::mpsc;
+    use tokio::time::{Duration, timeout};
+    use tokio::runtime::Builder;
+
+    #[test]
+    fn test_channel_capacity() {
+        // ...
+    }
+}
+```
+
+在我们的测试函数中，我们定义异步运行时和容量为 5 的通道：
+
+```rust
+let runtime = Builder::new_current_thread().enable_all()
+    .build()
+    .unwrap();
+let (sender, mut receiver) = mpsc::channel::<i32>(5);
+```
+
+然后我们生成一个任务，发送超过通道容量的消息：
+
+```rust
+let sender = runtime.spawn(async move {
+    for i in 0..10 {
+        sender.send(i).await.expect("Failed to send message");
+    }
+});
+```
+
+我们想通过超时测试看看我们的系统是否会崩溃：
+
+```rust
+let result = runtime.block_on(async {
+    timeout(Duration::from_secs(5), async {
+        sender.await.unwrap();
+    }).await
+});
+assert!(result.is_ok(), "A potential filled channel is not handled correctly");
+```
+
+现在，我们的测试将失败，因为发送者期物永远不会完成，所以我们的超时被超过了。为了使测试通过，我们需要在超时测试之前放入一个接收者期物：
+
+```rust
+let receiver = runtime.spawn(async move {
+    let mut i = 0;
+    while let Some(msg) = receiver.recv().await {
+        assert_eq!(msg, i);
+        i += 1;
+        println!("Got message: {}", msg);
+    }
+});
+```
+
+现在当我们运行测试时，它通过了。尽管我们测试了一个发送者和接收者的简单系统，但我们必须认识到，我们的测试突出显示了系统会因为未正确处理消息而陷入停滞。通道也可能导致死锁，就像我们的互斥锁一样，如果我们的测试足够充分，超时测试也会突出显示死锁。
+
+正如我们所知，通道使我们能够在系统中异步共享数据。当涉及到跨进程和计算机共享数据时，我们可以使用网络协议。毫无疑问，在实际应用中，你将编写使用协议与服务器交互的异步代码。我们的交互也需要进行测试。
+
+### 测试网络交互
+
+在开发和测试网络交互时，可能会倾向于在本地启动服务器并依赖该服务器。然而，这对测试来说可能不好。例如，如果我们有一个在运行测试后删除服务器上某行的操作，我们就不能立即再次运行它，因为该行已被删除。我们可以构建一个插入该行的步骤，但如果该行有依赖关系，则会变得更加复杂。此外，`cargo test` 命令在多个进程中运行。如果几个测试都访问同一个服务器，我们可能会在服务器上遇到数据竞态条件。这时我们使用 `mockito`。这个 crate 使我们能够直接在测试中模拟服务器，并断言服务器端点是以某些参数调用的。对于我们的网络测试示例，我们需要以下依赖项：
+
+```toml
+[dependencies]
+tokio = { version = "1.34.0", features = ["full"] }
+reqwest = { version = "0.11.22", features = ["json"] }
+
+[dev-dependencies]
+mockito = "1.2.0"
+```
+
+我们的测试大纲如下：
+
+```rust
+#[cfg(test)]
+mod tests {
+    use tokio::runtime::Builder;
+    use mockito::Matcher;
+    use reqwest;
+    #[test]
+    fn test_networking() {
+        // ...
+    }
+}
+```
+
+在我们的测试函数中，我们启动测试服务器：
+
+```rust
+let mut server = mockito::Server::new();
+let url = server.url();
+```
+
+这里，`mockito` 会查找计算机上当前未使用的端口。如果我们向该 URL 发送请求，我们的模拟服务器可以跟踪它们。记住，我们的服务器位于测试函数的范围内，因此测试完成后，模拟服务器将被终止。使用 `mockito`，我们的测试保持真正的原子性。
+
+然后我们定义一个服务器端点的模拟：
+
+```rust
+let mock = server.mock("GET", "/my-endpoint")
+    .match_query(Matcher::AllOf(vec![
+        Matcher::UrlEncoded("param1".into(), "value1".into()),
+        Matcher::UrlEncoded("param2".into(), "value2".into()),
+    ]))
+    .with_status(201)
+    .with_body("world")
+    .expect(5)
+    .create();
+```
+
+我们的模拟有端点 `/my-endpoint`。我们的模拟还期望 URL 中有某些参数。我们的模拟将返回响应代码 `201` 和主体 `world`。我们还期望我们的服务器被命中五次。如果需要，我们可以添加更多端点，但在此示例中，我们只使用一个以避免章节内容膨胀。
+
+现在我们的模拟服务器已构建，我们定义运行时环境：
+
+```rust
+let runtime = Builder::new_current_thread()
+    .enable_io()
+    .enable_time()
+    .build()
+    .unwrap();
+let mut handles = vec![];
+```
+
+一切准备就绪，因此我们向运行时发送五个异步任务：
+
+```rust
+for _ in 0..5 {
+    let url_clone = url.clone();
+    handles.push(runtime.spawn(async move {
+        let client = reqwest::Client::new();
+        client.get(&format!(
+            "{}/my-endpoint?param1=value1&param2=value2",
+            url_clone)).send().await.unwrap()
+    }));
+}
+```
+
+最后，我们可以阻塞线程等待异步任务完成，然后断言模拟：
+
+```rust
+for handle in handles {
+    runtime.block_on(handle).unwrap();
+}
+mock.assert();
+```
+
+我们可以断言所有异步任务都成功命中了服务器。如果我们的一个任务不成功，测试将失败。
+
+在定义请求的 URL 时，最好使用动态定义而不是硬编码。这使我们能够根据我们是向实时服务器、本地服务器还是模拟服务器发出请求来更改 URL 的主机。使用环境变量很诱人。然而，在 `cargo test` 的多线程环境中，这可能会导致问题。相反，最好定义一个提取配置变量的 trait。然后我们传入实现此提取配置变量 trait 的结构体。在将视图函数绑定到实时服务器时，我们可以传入一个从环境变量提取配置变量的结构体。然而，我们也可以在测试对其他服务器进行调用的函数和视图时，将 `mockito` URL 传递给提取配置变量 trait 的实现。
+
+`mockito` 还有更多功能。例如，JSON 主体、确定请求响应的函数以及其他特性在阅读 `mockito` 的 API 文档时可用。现在我们可以模拟服务器和 trait，我们可以在隔离的环境中测试我们的系统。但是，隔离期物并测试这些期物，检查轮询之间期物的状态呢？这就是异步测试 crate 可以为我们提供帮助的地方。
+
+### 细粒度的期物测试
+
+在本节中，我们将使用 Tokio 测试工具。然而，这里涵盖的概念可以应用于在任何异步运行时测试期物。对于我们的测试，我们需要以下依赖项：
+
+```toml
+[dependencies]
+tokio = { version = "1.34.0", features = ["full"] }
+
+[dev-dependencies]
+tokio-test = "0.4.3"
+```
+
+对于我们的细粒度测试，我们将让两个期物获取同一个互斥锁，将计数增加一，然后完成。由于两个期物通过获取同一个互斥锁存在间接交互，我们可以单独轮询期物，并确定期物在轮询时的状态。
+
+最初，我们的测试有以下布局：
+
+```rust
+#[cfg(test)]
+mod tests {
+    use tokio::sync::Mutex;
+    use tokio::time::{sleep, Duration};
+    use tokio_test::{task::spawn, assert_pending};
+    use std::sync::Arc;
+    use std::task::Poll;
+
+    async fn async_mutex_locker(mutex: Arc<Mutex<i32>>) -> () {
+        let mut lock = mutex.lock().await;
+        *lock += 1;
+        sleep(Duration::from_millis(1)).await;
+    }
+    #[tokio::test]
+    async fn test_monitor_file_metadata() {
+        // ...
+    }
+}
+```
+
+在我们的测试中，我们使用期物的引用定义互斥锁：
+
+```rust
+let mutex = Arc::new(Mutex::new(0));
+let mutex_clone1 = mutex.clone();
+let mutex_clone2 = mutex.clone();
+```
+
+现在我们可以使用 `tokio_test::spawn` 函数通过互斥锁引用生成期物：
+
+```rust
+let mut future1 = spawn(async_mutex_locker(mutex_clone1));
+let mut future2 = spawn(async_mutex_locker(mutex_clone2));
+```
+
+然后我们轮询我们的期物，断言两者都应该是待定的：
+
+```rust
+assert_pending!(future1.poll());
+assert_pending!(future2.poll());
+```
+
+虽然两个期物都是待定的，但我们知道第一个期物将首先获取互斥锁，因为它首先被轮询。我们可以交换轮询的顺序，我们会得到相反的效果。在这里，我们可以看到这种测试方法的力量。它使我们能够检查如果改变轮询顺序，期物会发生什么。然后我们可以在更深层次上测试边缘情况，因为除非我们特意设计我们的系统这样做，否则我们无法确保实时系统中轮询的顺序。
+
+正如我们在死锁示例中看到的，只要我们的第一个期物获取了互斥锁的锁，我们知道无论我们轮询第二个期物多少次，第二个期物将始终是待定的。我们确保我们的假设正确如下：
+
+```rust
+for _ in 0..10 {
+    assert_pending!(future2.poll());
+    sleep(Duration::from_millis(1)).await;
+}
+```
+
+在这里，我们可以看到使用 `assert_pending` 宏，如果我们的假设不正确，我们的测试将失败。足够的时间已经过去，所以我们可以假设如果我们现在轮询第一个期物，它将准备就绪。我们定义以下断言：
+
+```rust
+assert_eq!(future1.poll(), Poll::Ready(()));
+```
+
+然而，我们没有丢弃第一个期物，并且在整个期物过程中我们都没有释放锁。因此，我们可以得出结论，即使我们等待足够第二个期物完成的时间，第二个期物仍然会是待定的，因为第一个期物仍然持有互斥锁守卫。我们可以用这段代码断言这个假设：
+
+```rust
+sleep(Duration::from_millis(3)).await;
+assert_pending!(future2.poll());
+```
+
+我们可以通过丢弃第一个期物、等待，然后断言第二个期物现在已完成，来验证我们关于持有互斥锁的理论是正确的：
+
+```rust
+drop(future1);
+sleep(Duration::from_millis(1)).await;
+assert_eq!(future2.poll(), Poll::Ready(()));
+```
+
+然后我们可以断言我们的互斥锁具有我们期望的值：
+
+```rust
+let lock = mutex.lock().await;
+assert_eq!(*lock, 2);
+```
+
+如果我们运行测试，我们会看到它将通过。
+
+在这里，我们设法冻结了异步系统，检查了状态，然后再次轮询，一步一步地推进我们的期物。我们甚至可以在测试中随时交换轮询的顺序。这为我们测试轮询顺序改变时的结果提供了很大的能力。
+
+### 总结
+
+我们涵盖了一系列针对异步问题的测试方法，采用了测试驱动的方法。我们强烈建议，如果你正在开始一个新的异步 Rust 项目，你应该在编写异步代码的同时构建测试。你将因此保持快速的开发节奏。
+
+现在，我们共同的旅程即将结束。我们希望你对使用异步 Rust 感到兴奋。这是一个强大且不断发展的领域。凭借你的新技能和异步知识，你现在拥有了可以用于解决问题的另一个工具。你可以将问题分解为异步概念，并实现强大、快速的解决方案。我们希望你体验到了异步之美以及 Rust 实现异步系统的方式带来的喜悦。说实话，我们对你会用异步 Rust 构建什么感到兴奋。
