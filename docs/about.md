@@ -94,7 +94,7 @@ export default withMermaid(
 )
 ```
 
-在某一行后添加 `// [!code focus]` 注释会聚焦该行，并模糊代码块的其他部分。同理，`// [!code focus:<lines>]` 会聚集从此行开始往后的连续 `<lines>`行。例如
+在某一行后添加 `// [!code focus]` 注释会聚焦该行，并模糊代码块的其他部分。同理，`// [!code focus:<lines>]` 会聚集从此行开始往后的连续 `<lines>` 行。例如
 
 <pre>
 ```typescript

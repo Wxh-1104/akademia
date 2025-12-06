@@ -1,6 +1,6 @@
 /* 代码组：tab间距 */
 .vp-code-group .tabs {
-  padding-top: 20px;
+  padding: 2px 0 2px 75px;
 }
 
 /* 代码组：添加样式及阴影 */
@@ -11,7 +11,7 @@
 
 /* 代码组：添加macOS风格的小圆点 */
 .vp-code-group .tabs::before {
-  content: ' ';
+  content: " ";
   position: absolute;
   top: 12px;
   left: 12px;
@@ -21,7 +21,6 @@
   border-radius: 50%;
   box-shadow: 20px 0 #fdbc40, 40px 0 #35cd4b;
 }
-
 
 /* 代码组：修正倒角、阴影、边距 */
 .vp-code-group div[class*="language-"] {
@@ -37,16 +36,21 @@
 
 /* 代码组：修正行号位置 */
 .vp-code-group .line-numbers-mode .line-numbers-wrapper {
-  padding-top: 20px;
+  padding-top: 10px;
 }
 
 /* 代码组：修正行号右侧竖线位置 */
 .vp-code-group .line-numbers-mode .line-numbers-wrapper::after {
-  top: 24px;
-  height: calc(100% - 45px);
+  top: 10px;
+  height: calc(100% - 20px);
 }
 
-
+.vp-code-group .tabs label {
+  line-height: 32px;
+  font-family: var(--vp-font-family-mono);
+  font-feature-settings: var(--vp-font-feature-settings-mono);
+  font-variant-ligatures: var(--vp-font-variant-ligatures-mono);
+}
 
 /* 代码组（无行号）：修正倒角、阴影、边距 */
 .vp-code-group div[class*="language-"].vp-adaptive-theme {
@@ -58,4 +62,9 @@
 /* 代码组（无行号）：隐藏小圆点 */
 .vp-code-group div[class*="language-"].vp-adaptive-theme::before {
   display: none;
+}
+
+.vp-doc .vp-code-group [class*="language-"] > span.lang {
+  top: 6px;
+  right: 12px;
 }

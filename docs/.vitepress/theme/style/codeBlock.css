@@ -8,16 +8,20 @@ div[class*="language-"].line-numbers-mode pre {
 }
 
 /* 代码块：增加留空边距 增加阴影 */
-.vp-doc div[class*=language-] {
+.vp-doc div[class*="language-"] {
   padding-top: 20px;
 }
 
-.vp-doc [class*='language-'] code {
+.vp-doc [class*="language-"] code {
   padding: 0 10px; /* 行号右侧竖线与代码之间的距离 */
 }
 
+.vp-doc [class*="language-"] pre {
+  padding: 10px 0 10px 0;
+}
+
 /* 代码块：添加macOS风格的小圆点 */
-.vp-doc div[class*=language-]::before {
+.vp-doc div[class*="language-"]::before {
   content: "";
   display: block;
   position: absolute;
@@ -33,7 +37,7 @@ div[class*="language-"].line-numbers-mode pre {
 
 /* 代码块：下移行号 隐藏右侧竖线 */
 .vp-doc .line-numbers-wrapper {
-  padding-top: 40px;
+  padding-top: 30px;
   border-right: none;
 }
 
@@ -47,6 +51,33 @@ div[class*="language-"].line-numbers-mode pre {
   height: calc(100% - 60px);
 }
 
-.vp-doc div[class*='language-'].line-numbers-mode {
+.vp-doc div[class*="language-"].line-numbers-mode {
   margin-bottom: 20px;
+}
+
+.vp-doc [class*="language-"] > span.lang {
+  top: 6px;
+  right: 12px;
+  font-family: var(--vp-font-family-mono);
+  font-feature-settings: var(--vp-font-feature-settings-mono);
+  font-variant-ligatures: var(--vp-font-variant-ligatures-mono);
+}
+
+.vp-doc [class*='language-'] code .highlighted {
+    display: inline-block;
+    width: calc(100% + 22px);
+    margin: auto auto auto -12px;
+    padding: 0 0 0 12px;
+}
+
+.vp-doc [class*='language-'] code .diff {
+    display: inline-block;
+    width: fit-content;
+    margin: auto 12px auto -12px;
+    padding: 0 0 0 12px;
+}
+
+.vp-doc [class*='language-'] code .diff::before {
+    position: absolute;
+    left: 0;
 }
