@@ -15,7 +15,3 @@
   background-color: var(--vp-c-brand-3);
   opacity: 60%;
 }
-
-.marker:hover:after {
-  top: 0%;
-}
