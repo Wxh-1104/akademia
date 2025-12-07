@@ -567,6 +567,11 @@ LaTeX 相关：
     colorDark="#00bcd4"
   />
   <NavCard
+    title="MinerU"
+    description="在线解析 PDF 文件为文本格式"
+    link="https://mineru.net/"
+  />
+  <NavCard
     title="Programming Fonts"
     description="集合了大部分等宽字体，便于对比显示效果"
     link="https://www.programmingfonts.org/"
