@@ -74,6 +74,11 @@ license: CC-BY-NC-SA-4.0
     colorLight="#ffa116"
     colorDark="#ffa116"
   />
+  <NavCard
+    title="JavaScript 算法与数据结构"
+    description="基于 JS 的数据结构与算法"
+    link="https://github.com/trekhleb/javascript-algorithms/blob/master/README.zh-CN.md"
+  />
 </NavCardGrid>
 
 Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
@@ -207,6 +212,13 @@ AI、机器学习与深度学习相关：
     link="https://zh.d2l.ai/"
     colorLight="rgb(33, 150, 243)"
     colorDark="#b3d4fc"
+  />
+  <NavCard
+    title="强化学习的数学原理"
+    description="全英书籍 PDF，附有配套中文视频课程"
+    link="https://github.com/MathFoundationRL/Book-Mathematical-Foundation-of-Reinforcement-Learning"
+    colorLight="#b85051"
+    colorDark="#f5e5e7"
   />
   <NavCard
     title="动手实战人工智能"
