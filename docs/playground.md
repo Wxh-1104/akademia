@@ -343,6 +343,13 @@ Go 编程语言相关：
     colorDark="#50b7e0"
   />
   <NavCard
+    title="Go by Example"
+    description="对 Go 基于实践的介绍"
+    link="https://gobyexample-cn.github.io/"
+    colorLight="#007f9f"
+    colorDark="#50b7e0"
+  />
+  <NavCard
     title="Go Playground"
     description="线上编译运行 Go 代码的好去处"
     link="https://go.dev/play/"
