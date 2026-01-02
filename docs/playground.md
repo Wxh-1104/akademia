@@ -112,6 +112,13 @@ Web 开发相关，一般都包含对 HTML、CSS、JavaScript 的相关内容：
     colorLight="#417e38"
     colorDark="#84ba64"
   />
+  <NavCard
+    title="Flexbox Froggy"
+    description="借助生动形象的游戏关卡来学习 CSS 中的 Flexbox"
+    link="https://flexboxfroggy.com/"
+    colorLight="#43A047"
+    colorDark="#43A047"
+  />
 </NavCardGrid>
 
 前端开发框架：
@@ -535,6 +542,18 @@ LaTeX 相关：
     title="CTF Wiki"
     description="针对 CTF 竞赛提供相关知识讲解，也逐步延伸至计算机安全领域的其他内容"
     link="https://ctf-wiki.org/"
+    colorLight=""
+    colorDark=""
+  />
+</NavCardGrid>
+
+编程语言相关：
+
+<NavCardGrid :columns="5">
+  <NavCard
+    title="Crafting Interpreters"
+    description="使用Java构建一个你自己的脚本语言的解释器"
+    link="https://www.craftinginterpreters.com/"
     colorLight=""
     colorDark=""
   />
